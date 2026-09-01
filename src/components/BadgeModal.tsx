@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { UserProfile, QrPayload } from '../types';
 import { store } from '../services/store';
-import { X, ShieldCheck, RefreshCw, Copy, Check, Sparkles } from 'lucide-react';
+import { X, ShieldCheck, RefreshCw, Copy, Check, Lock } from 'lucide-react';
 
 interface BadgeModalProps {
   user: UserProfile;
@@ -15,18 +15,15 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ user, isOpen, onClose })
   const [tokenTimeLeft, setTokenTimeLeft] = useState<number>(60);
   const [payload, setPayload] = useState<QrPayload>(() => store.generateQrPayload(user));
 
-  // Ephemeral Time-Decay Token Rotation (DPDP Compliant)
   useEffect(() => {
     if (!isOpen) return;
 
-    // Reset token upon modal open
     setPayload(store.generateQrPayload(user));
     setTokenTimeLeft(60);
 
     const interval = setInterval(() => {
       setTokenTimeLeft((prev) => {
         if (prev <= 1) {
-          // Regenerate dynamic cryptographic payload
           setPayload(store.generateQrPayload(user));
           return 60;
         }
@@ -53,94 +50,93 @@ export const BadgeModal: React.FC<BadgeModalProps> = ({ user, isOpen, onClose })
   const payloadString = JSON.stringify(payload);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-sm bg-cyber-surface border border-cyber-cyan/40 rounded-2xl p-6 shadow-neon-cyan overflow-hidden">
-        {/* Top ambient lights */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-2 bg-gradient-to-r from-cyber-cyan via-cyber-purple to-cyber-emerald rounded-full blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] p-6 sm:p-7 border border-apple-hairline product-shadow overflow-hidden text-center">
         
-        {/* Close Button */}
+        {/* Close Button (Circular Utility Capsule) */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-slate-900/80 border border-slate-700 text-slate-400 hover:text-white hover:border-cyber-cyan transition-all"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-apple-parchment hover:bg-[#e5e5ea] text-[#86868b] hover:text-apple-ink flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Modal Header */}
-        <div className="text-center mb-5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/30 text-cyber-cyan text-xs font-mono mb-2">
-            <Sparkles className="w-3 h-3" />
-            <span>DYNAMIC DEV PASSPORT BADGE</span>
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-apple-parchment border border-apple-hairline text-apple-blue text-[12px] font-medium mb-2.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-apple-blue" />
+            <span>DPDP ROTATING BADGE</span>
           </div>
-          <h3 className="text-lg font-bold text-white font-display tracking-tight">
+          <h3 className="text-[24px] font-semibold text-apple-ink tracking-tight font-display">
             {user.name}
           </h3>
-          <p className="text-xs font-mono text-slate-400">
-            {user.handle} • <span className="text-amber-400 font-semibold">{user.tier} Tier</span>
+          <p className="text-[14px] text-[#86868b] font-mono mt-0.5">
+            {user.handle} • <span className="text-apple-ink font-semibold">{user.tier} Tier</span>
           </p>
         </div>
 
-        {/* High-Contrast QR Code Card */}
-        <div className="relative flex flex-col items-center justify-center p-5 bg-white rounded-xl shadow-2xl mx-auto w-fit">
+        {/* QR Code Presentation */}
+        <div className="relative p-5 bg-white rounded-[18px] border border-apple-hairline/80 shadow-sm mx-auto w-fit">
           <QRCodeSVG
             value={payloadString}
             size={200}
-            level="H"
+            level="M"
             includeMargin={false}
-            fgColor="#05070a"
+            fgColor="#1d1d1f"
             bgColor="#ffffff"
           />
 
-          {/* Central Logo Overlay */}
+          {/* Center Apple-styled Badge Icon */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-9 h-9 rounded-lg bg-cyber-bg border-2 border-cyber-cyan flex items-center justify-center shadow-lg">
-              <span className="font-mono font-bold text-cyber-cyan text-xs">L⚡P</span>
+            <div className="w-10 h-10 rounded-full bg-white border border-apple-hairline shadow-sm flex items-center justify-center text-apple-blue font-display font-bold text-[14px]">
+              ⚡
             </div>
           </div>
         </div>
 
-        {/* Time-decay rotation countdown */}
+        {/* Rotation Countdown */}
         <div className="mt-5 space-y-2">
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <RefreshCw className={`w-3.5 h-3.5 text-cyber-cyan ${tokenTimeLeft <= 10 ? 'animate-spin' : ''}`} />
-              Token Rotation
+          <div className="flex items-center justify-between text-[13px] font-text text-[#86868b]">
+            <span className="flex items-center gap-1.5 text-apple-ink-muted-80">
+              <RefreshCw className={`w-3.5 h-3.5 text-apple-blue ${tokenTimeLeft <= 10 ? 'animate-spin' : ''}`} />
+              Token Lifetime
             </span>
-            <span className={`font-bold ${tokenTimeLeft <= 10 ? 'text-rose-400 animate-pulse' : 'text-cyber-cyan'}`}>
+            <span className={`font-semibold ${tokenTimeLeft <= 10 ? 'text-[#ff3b30]' : 'text-apple-blue'}`}>
               {tokenTimeLeft}s remaining
             </span>
           </div>
 
-          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+          <div className="w-full h-1.5 bg-[#e5e5ea] rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-cyber-cyan to-cyber-purple transition-all duration-1000 ease-linear"
+              className="h-full bg-apple-blue transition-all duration-1000 ease-linear rounded-full"
               style={{ width: `${(tokenTimeLeft / 60) * 100}%` }}
             />
           </div>
         </div>
 
-        {/* Hash & Verification Footer */}
-        <div className="mt-4 pt-4 border-t border-cyber-border space-y-3">
-          <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-cyber-elevated/70 border border-cyber-border rounded-lg text-[11px] font-mono text-slate-400">
-            <span className="truncate max-w-[190px]">{user.badgeHash}</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+        {/* Footer Cryptographic Hash */}
+        <div className="mt-6 pt-4 border-t border-apple-hairline space-y-3">
+          <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-apple-parchment rounded-lg text-[11px] font-mono text-[#86868b]">
+            <span className="truncate max-w-[200px]">{user.badgeHash}</span>
+            <Lock className="w-3.5 h-3.5 text-apple-blue shrink-0" />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          {/* Action CTAs */}
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={handleCopyLink}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-cyber-elevated border border-cyber-border hover:border-cyber-cyan/50 text-xs font-mono text-slate-200 transition-all active:scale-95"
+              className="btn-apple py-2.5 px-3 rounded-full bg-apple-parchment hover:bg-[#e5e5ea] border border-apple-hairline text-[14px] text-apple-ink font-normal flex items-center justify-center gap-1.5"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied' : 'Share Link'}</span>
+              {copied ? <Check className="w-3.5 h-3.5 text-[#30d158]" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied' : 'Share'}</span>
             </button>
 
             <button
               onClick={handleManualRefresh}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-cyber-cyan/10 border border-cyber-cyan/40 hover:bg-cyber-cyan/20 text-xs font-mono text-cyber-cyan font-bold transition-all active:scale-95"
+              className="btn-apple py-2.5 px-3 rounded-full bg-apple-blue hover:bg-apple-blue-focus text-white text-[14px] font-normal flex items-center justify-center gap-1.5 shadow-sm"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Rotate Nonce</span>
+              <span>Rotate Now</span>
             </button>
           </div>
         </div>

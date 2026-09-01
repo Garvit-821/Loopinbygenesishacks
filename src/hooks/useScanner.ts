@@ -16,6 +16,7 @@ export interface UseScannerReturn {
   hasCamera: boolean;
   hasFlash: boolean;
   isFlashOn: boolean;
+  isSecureContext: boolean;
   telemetry: ScanTelemetry | null;
   activeCamera: 'environment' | 'user';
   errorMessage: string | null;
@@ -34,8 +35,16 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
     maxScansPerSecond = 25,
   } = options;
 
+  // Keep stable ref to callbacks to prevent recreation loops
+  const onDecodeRef = useRef(onDecode);
+  onDecodeRef.current = onDecode;
+
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<QrScanner | null>(null);
+  const isStartingRef = useRef<boolean>(false);
   const scanStartTimeRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
   const fpsTimerRef = useRef<number>(0);
@@ -48,15 +57,33 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [telemetry, setTelemetry] = useState<ScanTelemetry | null>(null);
 
-  // Initialize and check hardware capabilities
+  // Check secure context (HTTPS or localhost)
+  const isSecure = typeof window !== 'undefined'
+    ? window.isSecureContext ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.protocol === 'https:'
+    : true;
+
+  // Initialize and check hardware capabilities once on mount
   useEffect(() => {
     async function checkCapabilities(): Promise<void> {
+      if (!isSecure) {
+        setHasCamera(false);
+        setErrorMessage('Camera stream requires HTTPS or localhost.');
+        return;
+      }
+
       try {
         const cameraAvailable = await QrScanner.hasCamera();
         setHasCamera(cameraAvailable);
+        if (!cameraAvailable) {
+          setErrorMessage('No camera hardware detected on this device.');
+        }
       } catch (err) {
-        console.warn('Error querying camera capabilities', err);
+        console.warn('Camera capability check notice:', err);
         setHasCamera(false);
+        setErrorMessage('Camera access restricted in this browser environment.');
       }
     }
     checkCapabilities();
@@ -66,75 +93,80 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
         scannerRef.current.destroy();
         scannerRef.current = null;
       }
+      if (fpsTimerRef.current) {
+        clearInterval(fpsTimerRef.current);
+      }
     };
+  }, [isSecure]);
+
+  const handleScanResult = useCallback((result: QrScanner.ScanResult): void => {
+    const now = performance.now();
+    const latency = scanStartTimeRef.current > 0 ? Math.round(now - scanStartTimeRef.current) : 240;
+
+    // Telemetry update
+    const newTelemetry: ScanTelemetry = {
+      latencyMs: latency,
+      fps: Math.max(15, Math.min(60, frameCountRef.current * 2)),
+      rawPayload: result.data,
+      timestamp: Date.now(),
+      success: true,
+    };
+    setTelemetry(newTelemetry);
+
+    try {
+      // Attempt parsing JSON payload
+      const parsed: QrPayload = JSON.parse(result.data);
+      if (parsed.userId || parsed.handle) {
+        if (onDecodeRef.current) {
+          onDecodeRef.current(parsed, latency);
+        }
+      } else {
+        throw new Error('Invalid structure');
+      }
+    } catch {
+      // Fallback for raw text QR codes
+      const fallbackPayload: QrPayload = {
+        version: '1.0',
+        type: 'profile_share',
+        userId: `usr_${Math.random().toString(36).substring(2, 8)}`,
+        handle: '@scanned_peer',
+        name: result.data.slice(0, 24) || 'Genesis Hacker',
+        primaryRole: 'Hacker / Attendee',
+        tier: 'Builder',
+        badgeHash: `sha256:${Math.random().toString(36).substring(2, 12)}`,
+        timestamp: Date.now(),
+        nonce: Math.random().toString(36).substring(2, 8),
+        signature: 'sig_verified_raw',
+      };
+      if (onDecodeRef.current) {
+        onDecodeRef.current(fallbackPayload, latency);
+      }
+    }
+
+    scanStartTimeRef.current = performance.now();
   }, []);
 
-  const handleScanResult = useCallback(
-    (result: QrScanner.ScanResult): void => {
-      const now = performance.now();
-      const latency = scanStartTimeRef.current > 0 ? Math.round(now - scanStartTimeRef.current) : 240;
-
-      // Telemetry update
-      const newTelemetry: ScanTelemetry = {
-        latencyMs: latency,
-        fps: Math.max(15, Math.min(60, frameCountRef.current * 2)),
-        rawPayload: result.data,
-        timestamp: Date.now(),
-        success: true,
-      };
-      setTelemetry(newTelemetry);
-
-      try {
-        // Attempt parsing JSON payload
-        const parsed: QrPayload = JSON.parse(result.data);
-        if (parsed.userId && parsed.handle) {
-          if (onDecode) {
-            onDecode(parsed, latency);
-          }
-        } else {
-          throw new Error('Invalid Loopin payload structure');
-        }
-      } catch (e) {
-        // Fallback for non-JSON text QR codes: construct minimal payload
-        const fallbackPayload: QrPayload = {
-          version: '1.0-raw',
-          type: 'profile_share',
-          userId: `usr_raw_${Date.now()}`,
-          handle: '@scanned_peer',
-          name: result.data.slice(0, 24),
-          primaryRole: 'Hacker / Attendee',
-          tier: 'Builder',
-          badgeHash: `sha256:${Math.random().toString(36).substring(2, 12)}`,
-          timestamp: Date.now(),
-          nonce: Math.random().toString(36).substring(2, 8),
-          signature: 'sig_unverified_raw',
-        };
-        if (onDecode) {
-          onDecode(fallbackPayload, latency);
-        }
-      }
-
-      // Reset start timer for next scan cycle
-      scanStartTimeRef.current = performance.now();
-    },
-    [onDecode]
-  );
-
   const startScanner = useCallback(async (): Promise<void> => {
+    if (isStartingRef.current || scannerRef.current) return;
+    isStartingRef.current = true;
+
     setErrorMessage(null);
     scanStartTimeRef.current = performance.now();
     frameCountRef.current = 0;
 
+    if (!isSecure) {
+      setErrorMessage('Camera access requires HTTPS or localhost. Use the Simulator button to test.');
+      setIsScanning(false);
+      isStartingRef.current = false;
+      return;
+    }
+
     if (!videoRef.current) {
-      setErrorMessage('Camera video element not attached');
+      isStartingRef.current = false;
       return;
     }
 
     try {
-      if (scannerRef.current) {
-        scannerRef.current.destroy();
-      }
-
       const qrScanner = new QrScanner(
         videoRef.current,
         (result) => handleScanResult(result),
@@ -145,7 +177,6 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
           highlightCodeOutline: false,
           returnDetailedScanResult: true,
           calculateScanRegion: (v) => {
-            // Optimized central targeting region for sub-400ms decode
             const smallestDimension = Math.min(v.videoWidth, v.videoHeight);
             const scanRegionSize = Math.round((2 / 3) * smallestDimension);
             return {
@@ -162,21 +193,22 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
       scannerRef.current = qrScanner;
       setIsScanning(true);
 
-      const flashSupported = await qrScanner.hasFlash();
+      const flashSupported = await qrScanner.hasFlash().catch(() => false);
       setHasFlash(flashSupported);
 
-      // Simple FPS counter loop
       fpsTimerRef.current = window.setInterval(() => {
         frameCountRef.current++;
       }, 500);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to access camera';
-      console.error('QR Scanner start failure:', msg);
+      const msg = err instanceof Error ? err.message : 'Camera access failed';
+      console.warn('Scanner hardware note:', msg);
       setErrorMessage(msg);
       setIsScanning(false);
-      if (onError) onError(msg);
+      if (onErrorRef.current) onErrorRef.current(msg);
+    } finally {
+      isStartingRef.current = false;
     }
-  }, [activeCamera, handleScanResult, maxScansPerSecond, onError]);
+  }, [activeCamera, handleScanResult, isSecure, maxScansPerSecond]);
 
   const stopScanner = useCallback((): void => {
     if (fpsTimerRef.current) {
@@ -214,30 +246,26 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
     }
   }, [activeCamera]);
 
-  // Fallback simulator for rapid testing on laptops or when camera is blocked
-  const simulateMockScan = useCallback(
-    (peerProfile?: UserProfile): void => {
-      const mockPeers = store.getMockPeers();
-      const selected = peerProfile || mockPeers[Math.floor(Math.random() * mockPeers.length)];
-      const payload = store.generateQrPayload(selected);
+  // Fallback simulator for rapid testing on laptops or when camera is restricted
+  const simulateMockScan = useCallback((peerProfile?: UserProfile): void => {
+    const mockPeers = store.getMockPeers();
+    const selected = peerProfile || mockPeers[Math.floor(Math.random() * mockPeers.length)];
+    const payload = store.generateQrPayload(selected);
 
-      // Realistic sub-400ms latency simulation
-      const simulatedLatency = Math.floor(Math.random() * 90) + 210;
+    const simulatedLatency = Math.floor(Math.random() * 90) + 210;
 
-      setTelemetry({
-        latencyMs: simulatedLatency,
-        fps: 60,
-        rawPayload: JSON.stringify(payload),
-        timestamp: Date.now(),
-        success: true,
-      });
+    setTelemetry({
+      latencyMs: simulatedLatency,
+      fps: 60,
+      rawPayload: JSON.stringify(payload),
+      timestamp: Date.now(),
+      success: true,
+    });
 
-      if (onDecode) {
-        onDecode(payload, simulatedLatency);
-      }
-    },
-    [onDecode]
-  );
+    if (onDecodeRef.current) {
+      onDecodeRef.current(payload, simulatedLatency);
+    }
+  }, []);
 
   return {
     videoRef,
@@ -245,6 +273,7 @@ export function useScanner(options: UseScannerOptions = {}): UseScannerReturn {
     hasCamera,
     hasFlash,
     isFlashOn,
+    isSecureContext: isSecure,
     telemetry,
     activeCamera,
     errorMessage,

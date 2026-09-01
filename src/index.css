@@ -2,105 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-}
-
 @layer base {
   body {
-    background-color: #080b11;
-    color: #e2e8f0;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+    font-family: "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    font-size: 17px;
+    line-height: 1.47;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
   }
 }
 
-/* Custom Scrollbar */
+/* Subtle Apple Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #080b11;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(0, 0, 0, 0.18);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f0ff88;
+  background: rgba(0, 0, 0, 0.35);
+  background-clip: content-box;
 }
 
-/* Cyber Terminal Grid Pattern */
-.bg-grid-cyber {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+/* Apple Button Micro-Interaction */
+.btn-apple {
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.12s ease;
 }
 
-.bg-radial-vignette {
-  background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.07) 0%, rgba(168, 85, 247, 0.04) 45%, transparent 70%);
+.btn-apple:active {
+  transform: scale(0.95);
 }
 
-/* Hologram Card 3D Setup */
-.perspective-1000 {
-  perspective: 1000px;
+/* Apple Frosted Glass */
+.frosted-nav {
+  background: rgba(245, 245, 247, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.preserve-3d {
-  transform-style: preserve-3d;
+.frosted-nav-dark {
+  background: rgba(0, 0, 0, 0.80);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-.backface-hidden {
-  backface-visibility: hidden;
+.frosted-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
 }
 
-/* CRT Scanline Effect */
-.scanline-overlay {
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
-  ), linear-gradient(
-    90deg,
-    rgba(255, 0, 0, 0.03),
-    rgba(0, 255, 0, 0.01),
-    rgba(0, 0, 255, 0.03)
-  );
-  background-size: 100% 3px, 6px 100%;
-  pointer-events: none;
+/* Signature Apple Product Shadow (only on product renders resting on a surface) */
+.product-shadow {
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.22);
 }
 
-/* Hologram Sheen Gradient */
-.hologram-sheen {
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(0, 240, 255, 0.08) 25%,
-    rgba(168, 85, 247, 0.12) 45%,
-    rgba(0, 240, 255, 0.18) 50%,
-    rgba(16, 185, 129, 0.12) 55%,
-    transparent 75%
-  );
-  background-size: 200% 200%;
-}
-
-/* Glassmorphism Surface */
-.glass-panel {
-  background: rgba(13, 19, 31, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-panel-elevated {
-  background: rgba(19, 28, 45, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+.product-shadow-dark {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* Mobile Safe Areas */
@@ -112,7 +90,7 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Smooth Touch Scrolling */
+/* Hide scrollbars for carousel / tabs */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

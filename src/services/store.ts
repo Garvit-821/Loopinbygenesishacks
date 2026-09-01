@@ -612,41 +612,22 @@ class ReactiveStore {
     return feed[index];
   }
 
-  // Generate Ephemeral QR Payload for User
+  // Generate Ephemeral Compact QR Payload for User (<200 bytes for instant decode)
   public generateQrPayload(user: UserProfile): QrPayload {
-    const nonce = Math.random().toString(36).substring(2, 10);
+    const nonce = Math.random().toString(36).substring(2, 8);
     const timestamp = Date.now();
     return {
-      version: '2.0-dpdp',
+      version: '2.0',
       type: 'profile_share',
       userId: user.id,
       handle: user.handle,
       name: user.name,
       primaryRole: user.primaryRole,
       tier: user.tier,
-      badgeHash: user.badgeHash,
+      badgeHash: user.badgeHash ? user.badgeHash.substring(0, 32) : 'sha256:gen2026',
       timestamp,
       nonce,
-      signature: `hmac_sha256_${user.id}_${timestamp}_${nonce}`,
-      profileSnapshot: {
-        id: user.id,
-        handle: user.handle,
-        name: user.name,
-        avatarUrl: user.avatarUrl,
-        bio: user.bio,
-        primaryRole: user.primaryRole,
-        githubUsername: user.githubUsername,
-        linkedinUrl: user.linkedinUrl,
-        portfolioUrl: user.portfolioUrl,
-        tier: user.tier,
-        xpPoints: user.xpPoints,
-        rankPosition: user.rankPosition,
-        radarSkills: user.radarSkills,
-        stamps: user.stamps,
-        trophies: user.trophies,
-        vouches: user.vouches,
-        badgeHash: user.badgeHash,
-      },
+      signature: `sig_${user.id.slice(-6)}_${nonce}`,
     };
   }
 

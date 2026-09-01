@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useScanner } from '../hooks/useScanner';
 import { QrPayload, UserProfile } from '../types';
 import { store } from '../services/store';
@@ -34,81 +34,78 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [activeEventMet, setActiveEventMet] = useState<string>('Genesis Hacks 2026');
 
-  const presetTags = ['AI/ML', 'Rust/Systems', 'Frontend & UI', 'High-Conviction', 'Potential Co-Founder', 'Genesis 2026'];
+  const presetTags = ['AI/ML Systems', 'Rust/Systems', 'Frontend & UI', 'High-Conviction', 'Potential Co-Founder', 'Genesis 2026'];
 
-  const onDecodeCallback = (payload: QrPayload, latencyMs: number): void => {
-    // Audio chirp simulation
+  const onDecodeCallback = useCallback((payload: QrPayload, latencyMs: number): void => {
     try {
       if (typeof window !== 'undefined' && 'AudioContext' in window) {
         const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch affirmative beep
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.12);
+        osc.stop(ctx.currentTime + 0.1);
       }
     } catch {
-      // Audio not permitted or supported
+      // Audio fallback
     }
 
-    // Trigger haptic vibration on mobile
     if (navigator.vibrate) {
-      navigator.vibrate([40, 30, 40]);
+      navigator.vibrate([30, 20, 30]);
     }
 
     setScanLatency(latencyMs);
 
-    // If profile snapshot exists in payload, use it. Otherwise, look up or construct
     const mockPeers = store.getMockPeers();
     const matched = mockPeers.find((p) => p.handle === payload.handle || p.id === payload.userId);
 
-    const peerProfile: UserProfile = payload.profileSnapshot
-      ? (payload.profileSnapshot as UserProfile)
-      : matched || {
-          id: payload.userId,
-          handle: payload.handle,
-          name: payload.name,
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-          bio: 'Verified Genesis Hacker. Passionate about high-speed software and AI infrastructure.',
-          primaryRole: payload.primaryRole || 'Full-Stack Developer',
-          githubUsername: payload.handle.replace('@', ''),
-          linkedinUrl: 'https://linkedin.com',
-          portfolioUrl: 'https://github.com',
-          tier: payload.tier || 'Builder',
-          xpPoints: 12400,
-          nextTierXp: 15000,
-          rankPosition: 42,
-          totalHackathonsAttended: 5,
-          badgeHash: payload.badgeHash,
-          radarSkills: [
-            { category: 'AI/ML Systems', score: 85, maxScore: 100, verifiedCommits: 140 },
-            { category: 'Systems & Rust', score: 80, maxScore: 100, verifiedCommits: 110 },
-            { category: 'Frontend & UI', score: 90, maxScore: 100, verifiedCommits: 220 },
-            { category: 'Distributed Sys', score: 75, maxScore: 100, verifiedCommits: 90 },
-            { category: 'Web3 & Security', score: 70, maxScore: 100, verifiedCommits: 60 },
-            { category: 'DevOps & Cloud', score: 80, maxScore: 100, verifiedCommits: 85 },
-          ],
-          activityMatrix: [],
-          stamps: [],
-          trophies: [],
-          vouches: [],
-        };
+    const peerProfile: UserProfile = matched || {
+      id: payload.userId,
+      handle: payload.handle,
+      name: payload.name,
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      bio: 'Verified Genesis Hacker. Passionate about high-speed software and AI infrastructure.',
+      primaryRole: payload.primaryRole || 'Full-Stack Developer',
+      githubUsername: payload.handle.replace('@', ''),
+      linkedinUrl: 'https://linkedin.com',
+      portfolioUrl: 'https://github.com',
+      tier: payload.tier || 'Builder',
+      xpPoints: 12400,
+      nextTierXp: 15000,
+      rankPosition: 42,
+      totalHackathonsAttended: 5,
+      badgeHash: payload.badgeHash,
+      radarSkills: [
+        { category: 'AI/ML Systems', score: 85, maxScore: 100, verifiedCommits: 140 },
+        { category: 'Systems & Rust', score: 80, maxScore: 100, verifiedCommits: 110 },
+        { category: 'Frontend & UI', score: 90, maxScore: 100, verifiedCommits: 220 },
+        { category: 'Distributed Sys', score: 75, maxScore: 100, verifiedCommits: 90 },
+        { category: 'Web3 & Security', score: 70, maxScore: 100, verifiedCommits: 60 },
+        { category: 'DevOps & Cloud', score: 80, maxScore: 100, verifiedCommits: 85 },
+      ],
+      activityMatrix: [],
+      stamps: [],
+      trophies: [],
+      vouches: [],
+    };
 
     setScannedPeer(peerProfile);
     setSelectedTags(['Genesis 2026', peerProfile.primaryRole]);
     setIsSaved(false);
-  };
+  }, []);
 
   const {
     videoRef,
-    isScanning,
+    hasCamera,
     hasFlash,
     isFlashOn,
+    isSecureContext,
+    errorMessage,
     telemetry,
     activeCamera,
     startScanner,
@@ -120,11 +117,8 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
     onDecode: onDecodeCallback,
   });
 
-  const isScanningRef = useRef(isScanning);
-  isScanningRef.current = isScanning;
-
   useEffect(() => {
-    if (isOpen && !scannedPeer) {
+    if (isOpen && !scannedPeer && hasCamera && isSecureContext) {
       startScanner();
     } else {
       stopScanner();
@@ -133,7 +127,7 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
     return () => {
       stopScanner();
     };
-  }, [isOpen, scannedPeer, startScanner, stopScanner]);
+  }, [isOpen, scannedPeer, hasCamera, isSecureContext, startScanner, stopScanner]);
 
   const handleSaveConnection = (): void => {
     if (!scannedPeer) return;
@@ -151,7 +145,7 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
 
     setTimeout(() => {
       handleClose();
-    }, 900);
+    }, 800);
   };
 
   const handleClose = (): void => {
@@ -181,21 +175,21 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in duration-200 p-3 sm:p-6 overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-cyber-bg border border-cyber-cyan/40 rounded-2xl shadow-neon-cyan overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xl animate-in fade-in duration-200 p-3 sm:p-6 overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white rounded-[24px] border border-apple-hairline product-shadow overflow-hidden my-auto text-apple-ink">
         
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-cyber-surface border-b border-cyber-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-apple-hairline">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-cyber-cyan animate-ping" />
-            <span className="font-mono text-xs font-bold tracking-widest text-cyber-cyan uppercase">
-              {scannedPeer ? 'TARGET ACQUIRED // PROFILE DECODED' : 'SUB-400MS QR VIEWFINDER HUD'}
+            <span className="w-2.5 h-2.5 rounded-full bg-apple-blue" />
+            <span className="text-[13px] font-semibold text-apple-ink font-display">
+              {scannedPeer ? 'Profile Verified' : 'High-Speed QR Scanner'}
             </span>
           </div>
 
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-white hover:border-cyber-cyan transition-all"
+            className="w-8 h-8 rounded-full bg-apple-parchment hover:bg-[#e5e5ea] text-[#86868b] hover:text-apple-ink flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -203,120 +197,135 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
 
         {/* View 1: Scanning Viewfinder */}
         {!scannedPeer ? (
-          <div className="relative flex flex-col items-center">
+          <div className="flex flex-col items-center">
             {/* Viewfinder Window */}
-            <div className="relative w-full aspect-square max-h-[380px] bg-slate-950 flex items-center justify-center overflow-hidden">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                playsInline
-                muted
-              />
-
-              {/* CRT Scanline Overlay */}
-              <div className="absolute inset-0 scanline-overlay pointer-events-none" />
-
-              {/* Animated HUD Sweep Line */}
-              <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyber-cyan to-transparent shadow-[0_0_15px_#00f0ff] animate-scanline pointer-events-none" />
-
-              {/* Cyber Reticle & Corner Brackets */}
-              <div className="absolute inset-8 sm:inset-12 border-2 border-cyber-cyan/40 rounded-xl pointer-events-none flex flex-col justify-between p-2 shadow-hud-glow">
-                <div className="flex justify-between">
-                  <div className="w-5 h-5 border-t-2 border-l-2 border-cyber-cyan" />
-                  <div className="w-5 h-5 border-t-2 border-r-2 border-cyber-cyan" />
-                </div>
-                {/* Center Crosshairs */}
-                <div className="self-center flex items-center justify-center">
-                  <div className="w-6 h-6 border border-cyber-cyan/30 rounded-full flex items-center justify-center animate-spin">
-                    <div className="w-1.5 h-1.5 bg-cyber-cyan rounded-full" />
+            <div className="relative w-full aspect-square max-h-[360px] bg-apple-black flex items-center justify-center overflow-hidden">
+              {hasCamera && isSecureContext ? (
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  playsInline
+                  muted
+                />
+              ) : (
+                /* Non-HTTPS / Simulation View */
+                <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+                    <Sparkles className="w-6 h-6 text-[#2997ff]" />
                   </div>
+                  <div>
+                    <h4 className="text-[17px] font-semibold text-white font-display">
+                      {errorMessage || 'Sub-400ms Camera Scanner'}
+                    </h4>
+                    <p className="text-[13px] text-[#cccccc] mt-1 max-w-xs leading-relaxed">
+                      Instant cryptographic scanner engine active. Test immediate credential exchange using simulator.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => simulateMockScan()}
+                    className="btn-apple px-5 py-2.5 rounded-full bg-apple-blue hover:bg-apple-blue-focus text-white text-[14px] font-normal shadow-sm"
+                  >
+                    Simulate Fast Scan
+                  </button>
+                </div>
+              )}
+
+              {/* Minimalist Apple Reticle (Corner Brackets) */}
+              <div className="absolute inset-10 sm:inset-14 border border-white/20 rounded-[20px] pointer-events-none flex flex-col justify-between p-3">
+                <div className="flex justify-between">
+                  <div className="w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-lg" />
+                  <div className="w-6 h-6 border-t-2 border-r-2 border-white rounded-tr-lg" />
                 </div>
                 <div className="flex justify-between">
-                  <div className="w-5 h-5 border-b-2 border-l-2 border-cyber-cyan" />
-                  <div className="w-5 h-5 border-b-2 border-r-2 border-cyber-cyan" />
+                  <div className="w-6 h-6 border-b-2 border-l-2 border-white rounded-bl-lg" />
+                  <div className="w-6 h-6 border-b-2 border-r-2 border-white rounded-br-lg" />
                 </div>
               </div>
 
-              {/* Telemetry Status Inset */}
-              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between px-3 py-1.5 bg-black/70 border border-cyber-border rounded-lg text-[11px] font-mono text-slate-300 backdrop-blur-md">
+              {/* Bottom Telemetry Chip */}
+              <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between px-3.5 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[12px] font-text text-white">
                 <div className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-cyber-cyan animate-pulse" />
-                  <span>Target: <span className="text-white font-bold">&lt;400ms</span> decode</span>
+                  <Zap className="w-3.5 h-3.5 text-[#30d158]" />
+                  <span>Sub-400ms Hardware Decode</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span>FPS: <span className="text-emerald-400 font-bold">{telemetry?.fps || 60}</span></span>
-                  <span>LATENCY: <span className="text-cyber-cyan font-bold">{telemetry?.latencyMs ? `${telemetry.latencyMs}ms` : 'READY'}</span></span>
+                <div className="flex items-center gap-2 text-[#cccccc]">
+                  <span>FPS: {telemetry?.fps || 60}</span>
+                  <span>•</span>
+                  <span className="text-white font-medium">
+                    {telemetry?.latencyMs ? `${telemetry.latencyMs}ms` : 'Ready'}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Hardware Controls */}
-            <div className="w-full p-4 bg-cyber-surface/90 border-t border-cyber-border flex items-center justify-between gap-3">
+            {/* Bottom Scanner Toolbar */}
+            <div className="w-full p-4 bg-apple-parchment border-t border-apple-hairline flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 {hasFlash && (
                   <button
                     onClick={toggleFlash}
-                    className={`p-2.5 rounded-xl border text-xs font-mono flex items-center gap-1.5 transition-all ${
+                    className={`btn-apple px-3.5 py-2 rounded-full border text-[13px] flex items-center gap-1.5 transition-all ${
                       isFlashOn
-                        ? 'bg-amber-400/20 border-amber-400 text-amber-300 shadow-[0_0_10px_#f59e0b]'
-                        : 'bg-cyber-elevated border-cyber-border text-slate-300 hover:border-cyber-cyan'
+                        ? 'bg-apple-ink text-white border-apple-ink'
+                        : 'bg-white border-apple-hairline text-apple-ink'
                     }`}
                   >
-                    <Flashlight className="w-4 h-4" />
-                    <span>{isFlashOn ? 'Torch ON' : 'Torch'}</span>
+                    <Flashlight className="w-3.5 h-3.5" />
+                    <span>{isFlashOn ? 'Torch On' : 'Torch'}</span>
                   </button>
                 )}
 
-                <button
-                  onClick={flipCamera}
-                  className="p-2.5 rounded-xl bg-cyber-elevated border border-cyber-border hover:border-cyber-cyan text-xs font-mono text-slate-300 flex items-center gap-1.5 transition-all"
-                >
-                  <SwitchCamera className="w-4 h-4" />
-                  <span className="capitalize">{activeCamera}</span>
-                </button>
+                {hasCamera && isSecureContext && (
+                  <button
+                    onClick={flipCamera}
+                    className="btn-apple px-3.5 py-2 rounded-full bg-white border border-apple-hairline text-[13px] text-apple-ink flex items-center gap-1.5"
+                  >
+                    <SwitchCamera className="w-3.5 h-3.5" />
+                    <span className="capitalize">{activeCamera}</span>
+                  </button>
+                )}
               </div>
 
-              {/* Quick Mock Scan Simulator */}
               <button
                 onClick={() => simulateMockScan()}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan/20 to-cyber-purple/20 border border-cyber-cyan hover:bg-cyber-cyan/30 text-cyber-cyan font-mono text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-neon-cyan"
+                className="btn-apple px-4 py-2 rounded-full bg-white border border-apple-hairline text-apple-blue hover:bg-apple-pearl text-[13px] font-medium flex items-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Simulate Fast Scan</span>
+                <span>Simulate Scan</span>
               </button>
             </div>
           </div>
         ) : (
-          /* View 2: Scanned Peer Exchange & Private Note Ingestion */
-          <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-            {/* Top Verification Telemetry Banner */}
-            <div className="flex items-center justify-between px-3.5 py-2 bg-emerald-950/40 border border-emerald-500/50 rounded-xl text-xs font-mono text-emerald-300">
+          /* View 2: Scanned Peer Exchange & Private Note */
+          <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+            {/* Decoded Banner */}
+            <div className="flex items-center justify-between px-4 py-2.5 bg-apple-parchment rounded-xl text-[13px] text-apple-ink font-text">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>PASSPORT VERIFIED • NONCE VALID</span>
+                <CheckCircle2 className="w-4 h-4 text-[#30d158]" />
+                <span className="font-semibold">Passport Signature Verified</span>
               </div>
-              <span className="font-bold text-cyber-cyan">{scanLatency}ms</span>
+              <span className="font-mono text-apple-blue font-semibold">{scanLatency}ms</span>
             </div>
 
-            {/* Profile Summary Card */}
-            <div className="flex items-start gap-4 p-4 bg-cyber-elevated/80 border border-cyber-border rounded-xl">
+            {/* Peer Card */}
+            <div className="flex items-start gap-4 p-4 bg-apple-parchment rounded-[18px] border border-apple-hairline">
               <img
                 src={scannedPeer.avatarUrl}
                 alt={scannedPeer.name}
-                className="w-14 h-14 rounded-xl object-cover border-2 border-cyber-cyan shrink-0"
+                className="w-14 h-14 rounded-[12px] object-cover border border-apple-hairline shrink-0"
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <h4 className="text-base font-bold text-white truncate font-display">
+                  <h4 className="text-[17px] font-semibold text-apple-ink truncate font-display">
                     {scannedPeer.name}
                   </h4>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-400/10 border border-amber-400/40 text-amber-300">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white border border-apple-hairline text-apple-ink">
                     {scannedPeer.tier}
                   </span>
                 </div>
-                <div className="text-xs font-mono text-cyber-cyan">{scannedPeer.handle}</div>
-                <div className="text-xs text-slate-300 font-medium mt-1">{scannedPeer.primaryRole}</div>
-                <p className="text-xs text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                <div className="text-[13px] font-mono text-apple-blue">{scannedPeer.handle}</div>
+                <div className="text-[14px] text-apple-ink-muted-80 font-normal mt-1">{scannedPeer.primaryRole}</div>
+                <p className="text-[13px] text-[#86868b] line-clamp-2 mt-1 leading-relaxed">
                   {scannedPeer.bio}
                 </p>
               </div>
@@ -324,46 +333,45 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
 
             {/* Event Context Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-cyber-cyan" />
-                <span>Event Context</span>
+              <label className="text-[13px] font-semibold text-apple-ink flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-apple-blue" />
+                <span>Event Met</span>
               </label>
               <input
                 type="text"
                 value={activeEventMet}
                 onChange={(e) => setActiveEventMet(e.target.value)}
-                className="w-full px-3 py-2 bg-cyber-surface border border-cyber-border rounded-lg text-xs font-mono text-white focus:outline-none focus:border-cyber-cyan"
+                className="w-full px-3.5 py-2.5 bg-apple-parchment border border-apple-hairline rounded-xl text-[14px] text-apple-ink focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:border-apple-blue"
               />
             </div>
 
-            {/* Private Contextual Note (Encrypted / Local) */}
+            {/* Private Contextual Note */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-mono text-slate-300 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-cyber-purple" />
+                <label className="text-[13px] font-semibold text-apple-ink flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-apple-blue" />
                   <span>Private Contextual Note</span>
                 </label>
-                <span className="text-[10px] font-mono text-slate-500">
-                  🔒 Strictly private to you
+                <span className="text-[11px] text-[#86868b]">
+                  🔒 Stored locally & private to you
                 </span>
               </div>
               <textarea
                 value={privateNote}
                 onChange={(e) => setPrivateNote(e.target.value)}
-                placeholder="e.g. Discussed Rust WebAssembly optimization for edge indexer. Looking to team up for Genesis Winter 2026."
+                placeholder="e.g. Discussed edge indexer optimizations. Teaming up for Genesis Winter."
                 rows={3}
-                className="w-full px-3.5 py-2.5 bg-cyber-surface border border-cyber-border rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyber-cyan focus:ring-1 focus:ring-cyber-cyan resize-none font-sans"
+                className="w-full px-3.5 py-2.5 bg-apple-parchment border border-apple-hairline rounded-xl text-[14px] text-apple-ink placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:border-apple-blue resize-none"
               />
             </div>
 
             {/* Tagging System */}
             <div className="space-y-2">
-              <label className="text-xs font-mono text-slate-300 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-cyber-cyan" />
-                <span>Category Tags</span>
+              <label className="text-[13px] font-semibold text-apple-ink flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-apple-blue" />
+                <span>Tags</span>
               </label>
               
-              {/* Preset Chips */}
               <div className="flex flex-wrap gap-1.5">
                 {presetTags.map((tag) => {
                   const isSelected = selectedTags.includes(tag);
@@ -372,49 +380,48 @@ export const FastScannerModal: React.FC<FastScannerModalProps> = ({
                       key={tag}
                       type="button"
                       onClick={() => toggleTag(tag)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-mono transition-all ${
+                      className={`btn-apple px-3 py-1 rounded-full text-[12px] transition-all ${
                         isSelected
-                          ? 'bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-bold shadow-[0_0_8px_rgba(0,240,255,0.3)]'
-                          : 'bg-cyber-surface border border-cyber-border text-slate-400 hover:text-white'
+                          ? 'bg-apple-blue text-white font-medium'
+                          : 'bg-apple-parchment border border-apple-hairline text-apple-ink hover:bg-[#e5e5ea]'
                       }`}
                     >
-                      +{tag}
+                      {tag}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Custom Tag Input */}
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleAddCustomTag}
                 placeholder="Type custom tag and press Enter..."
-                className="w-full px-3 py-1.5 bg-cyber-surface border border-cyber-border rounded-lg text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyber-cyan"
+                className="w-full px-3.5 py-2 bg-apple-parchment border border-apple-hairline rounded-xl text-[13px] text-apple-ink placeholder-[#86868b] focus:outline-none focus:border-apple-blue"
               />
             </div>
 
-            {/* Save Button */}
+            {/* Save Button (Action Blue Pill) */}
             <div className="pt-2">
               <button
                 onClick={handleSaveConnection}
                 disabled={isSaved}
-                className={`w-full py-3 px-4 rounded-xl font-mono text-xs font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 shadow-neon-cyan ${
+                className={`btn-apple w-full py-3 px-4 rounded-full text-[17px] font-normal transition-all flex items-center justify-center gap-2 ${
                   isSaved
-                    ? 'bg-emerald-500 text-black'
-                    : 'bg-gradient-to-r from-cyber-cyan via-cyber-violet to-cyber-purple text-black hover:opacity-90 active:scale-98'
+                    ? 'bg-[#30d158] text-white'
+                    : 'bg-apple-blue hover:bg-apple-blue-focus text-white shadow-sm'
                 }`}
               >
                 {isSaved ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>SAVED TO PASSPORT GRAPH!</span>
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                    <span>Added to Network Graph</span>
                   </>
                 ) : (
                   <>
-                    <UserCheck className="w-4 h-4" />
-                    <span>CONFIRM & ADD TO DEV NETWORK</span>
+                    <UserCheck className="w-5 h-5 text-white" />
+                    <span>Save to Contacts & Network</span>
                   </>
                 )}
               </button>
