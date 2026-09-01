@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SkillVector } from '../../types';
 import { ShieldCheck, GitCommit } from 'lucide-react';
 
@@ -15,11 +15,28 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   className = '',
   showLabels = true,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [responsiveSize, setResponsiveSize] = useState<number>(size);
   const [activeSkill, setActiveSkill] = useState<SkillVector | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
-  const center = size / 2;
-  const radius = size * 0.36;
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const parentWidth = containerRef.current.parentElement?.clientWidth || window.innerWidth;
+        const targetSize = Math.min(size, Math.max(260, parentWidth - 48));
+        setResponsiveSize(targetSize);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [size]);
+
+  const currentSize = responsiveSize;
+  const center = currentSize / 2;
+  const radius = currentSize * 0.34;
   const numAxes = skills.length;
 
   const getCoordinates = (index: number, valueRatio: number, offsetRadius = radius): { x: number; y: number } => {
@@ -49,12 +66,12 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   };
 
   return (
-    <div className={`relative flex flex-col items-center justify-center ${className}`}>
-      <div className="relative" style={{ width: size, height: size }}>
+    <div ref={containerRef} className={`relative flex flex-col items-center justify-center max-w-full overflow-visible ${className}`}>
+      <div className="relative" style={{ width: currentSize, height: currentSize }}>
         <svg
-          viewBox={`0 0 ${size} ${size}`}
-          width={size}
-          height={size}
+          viewBox={`0 0 ${currentSize} ${currentSize}`}
+          width={currentSize}
+          height={currentSize}
           className="overflow-visible"
         >
           {/* Background Concentric Polygon Grids */}
@@ -121,7 +138,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                 <circle
                   cx={pt.x}
                   cy={pt.y}
-                  r={isHovered ? 6 : 4}
+                  r={isHovered ? 5.5 : 3.5}
                   fill="#ffffff"
                   stroke="#0066cc"
                   strokeWidth={isHovered ? 2.5 : 1.5}
@@ -133,7 +150,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
 
           {/* Axis Labels (SF Pro Display & Text) */}
           {showLabels && skills.map((skill, i) => {
-            const labelRadius = radius + 26;
+            const labelRadius = radius + 22;
             const { x, y } = getCoordinates(i, 1.0, labelRadius);
             const isLeft = x < center - 10;
             const isRight = x > center + 10;
@@ -151,7 +168,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                   y={y}
                   textAnchor={textAnchor}
                   fill={isHovered ? '#0066cc' : '#1d1d1f'}
-                  fontSize="11"
+                  fontSize={currentSize < 300 ? '9.5' : '11'}
                   fontWeight="600"
                   fontFamily="SF Pro Display, -apple-system, sans-serif"
                   letterSpacing="-0.01em"
@@ -161,10 +178,10 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                 </text>
                 <text
                   x={x}
-                  y={y + 12}
+                  y={y + (currentSize < 300 ? 10 : 12)}
                   textAnchor={textAnchor}
                   fill="#86868b"
-                  fontSize="10"
+                  fontSize={currentSize < 300 ? '8.5' : '10'}
                   fontFamily="SF Pro Text, -apple-system, sans-serif"
                 >
                   {skill.score}/{skill.maxScore}
@@ -198,9 +215,9 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       </div>
 
       {/* Verified Footer Chip */}
-      <div className="flex items-center gap-1.5 mt-3 px-3 py-1 bg-white border border-apple-hairline rounded-full text-[12px] text-apple-ink-muted-80 font-text">
-        <ShieldCheck className="w-3.5 h-3.5 text-apple-blue" />
-        <span>Verified by GitHub PR diffs & jury rubrics</span>
+      <div className="flex items-center gap-1.5 mt-3 px-3 py-1 bg-white border border-apple-hairline rounded-full text-[11px] sm:text-[12px] text-apple-ink-muted-80 font-text max-w-[90%] text-center">
+        <ShieldCheck className="w-3.5 h-3.5 text-apple-blue shrink-0" />
+        <span className="truncate">Verified by GitHub PR diffs & jury rubrics</span>
       </div>
     </div>
   );

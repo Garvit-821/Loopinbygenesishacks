@@ -48,6 +48,7 @@ export interface PeerVouch {
 
 export interface UserProfile {
   id: string;
+  email?: string;
   handle: string;
   name: string;
   avatarUrl: string;
@@ -118,3 +119,25 @@ export interface ScanTelemetry {
 }
 
 export type TabType = 'passport' | 'connections' | 'feed';
+
+export interface AuthSession {
+  token: string;
+  user: UserProfile;
+  expiresAt: number;
+}
+
+export interface LoginCredentials {
+  email?: string;
+  password?: string;
+  githubUsername?: string;
+}
+
+export interface SignUpData {
+  name: string;
+  handle: string;
+  email: string;
+  password?: string;
+  primaryRole: string;
+  githubUsername?: string;
+  bio?: string;
+}

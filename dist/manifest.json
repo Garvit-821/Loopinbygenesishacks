@@ -1,0 +1,19 @@
+{
+  "name": "Loopin // Genesis Hacks",
+  "short_name": "Loopin",
+  "description": "Verified Developer Passport and Real-time Networking Engine for Hackathons",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f5f7",
+  "theme_color": "#000000",
+  "categories": ["utilities", "productivity", "social"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

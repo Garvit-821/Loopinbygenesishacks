@@ -8,6 +8,39 @@ export default {
   theme: {
     extend: {
       colors: {
+        border: '#e0e0e0',
+        input: '#e0e0e0',
+        ring: '#0071e3',
+        background: '#ffffff',
+        foreground: '#1d1d1f',
+        primary: {
+          DEFAULT: '#0066cc',
+          foreground: '#ffffff',
+        },
+        secondary: {
+          DEFAULT: '#f5f5f7',
+          foreground: '#1d1d1f',
+        },
+        destructive: {
+          DEFAULT: '#ff3b30',
+          foreground: '#ffffff',
+        },
+        muted: {
+          DEFAULT: '#f5f5f7',
+          foreground: '#86868b',
+        },
+        accent: {
+          DEFAULT: '#f5f5f7',
+          foreground: '#1d1d1f',
+        },
+        popover: {
+          DEFAULT: '#ffffff',
+          foreground: '#1d1d1f',
+        },
+        card: {
+          DEFAULT: '#ffffff',
+          foreground: '#1d1d1f',
+        },
         apple: {
           primary: '#0066cc',
           blue: '#0066cc',

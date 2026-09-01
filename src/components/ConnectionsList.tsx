@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Connection, UserProfile } from '../types';
 import { store } from '../services/store';
+import { downloadVCard } from '../utils/vcard';
 import {
   Search,
   Users,
@@ -16,17 +17,19 @@ import {
   Share2,
   Check,
   Zap,
+  UserCheck,
 } from 'lucide-react';
 
 interface ConnectionsListProps {
   connections: Connection[];
   onOpenScanner: () => void;
-  onSelectPeer?: (peer: UserProfile) => void;
+  onSelectPeer: (peer: UserProfile, connection: Connection) => void;
 }
 
 export const ConnectionsList: React.FC<ConnectionsListProps> = ({
   connections,
   onOpenScanner,
+  onSelectPeer,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
     return Array.from(tagsSet);
   }, [connections]);
 
-  // Filter connections by search query and selected tag
+  // Filter connections
   const filteredConnections = useMemo(() => {
     return connections.filter((c) => {
       const matchSearch =
@@ -92,6 +95,11 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleDownloadContactVCard = (conn: Connection, e: React.MouseEvent): void => {
+    e.stopPropagation();
+    downloadVCard(conn.peerProfile, conn.eventMet, conn.privateNotes);
+  };
+
   const handleExportCSV = (): void => {
     const headers = 'Name,Handle,Role,Tier,EventMet,DateMet,Tags,PrivateNotes\n';
     const rows = connections
@@ -118,24 +126,24 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
   };
 
   return (
-    <div className="w-full bg-apple-parchment min-h-screen py-10 sm:py-16 px-4 sm:px-8">
+    <div className="w-full bg-apple-parchment min-h-screen py-8 sm:py-16 px-3 sm:px-8">
       <div className="max-w-[980px] mx-auto">
         
         {/* Header Title */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 px-1">
           <div>
-            <h1 className="text-[32px] sm:text-[40px] font-semibold text-apple-ink tracking-tight font-display">
+            <h1 className="text-[26px] sm:text-[34px] md:text-[40px] font-semibold text-apple-ink tracking-tight font-display">
               Network Graph.
             </h1>
-            <p className="text-[17px] text-apple-ink-muted-80 font-normal mt-1">
+            <p className="text-[14px] sm:text-[17px] text-apple-ink-muted-80 font-normal mt-1">
               {connections.length} verified developer connections with contextual notes and private metadata.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <button
               onClick={handleExportCSV}
-              className="btn-apple px-4 py-2 rounded-full bg-white border border-apple-hairline text-[14px] text-apple-ink hover:bg-apple-pearl flex items-center gap-1.5"
+              className="btn-apple px-3.5 sm:px-4 py-2 rounded-full bg-white border border-apple-hairline text-[13px] sm:text-[14px] text-apple-ink hover:bg-apple-pearl flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-apple-blue" />
               <span>Export CSV</span>
@@ -143,7 +151,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 
             <button
               onClick={onOpenScanner}
-              className="btn-apple px-4 py-2 rounded-full bg-apple-blue hover:bg-apple-blue-focus text-white text-[14px] font-normal flex items-center gap-1.5 shadow-sm"
+              className="btn-apple px-4 py-2 rounded-full bg-apple-blue hover:bg-apple-blue-focus text-white text-[13px] sm:text-[14px] font-normal flex items-center gap-1.5 shadow-sm"
             >
               <Users className="w-3.5 h-3.5" />
               <span>Add Peer</span>
@@ -152,23 +160,23 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
         </div>
 
         {/* Search Input (Apple Pill Shape) */}
-        <div className="relative mb-6">
+        <div className="relative mb-5 sm:mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86868b]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, role, tags, or private notes..."
-            className="w-full h-[44px] pl-11 pr-4 bg-white border border-apple-hairline rounded-full text-[17px] text-apple-ink placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:border-apple-blue shadow-sm"
+            className="w-full h-[44px] pl-11 pr-4 bg-white border border-apple-hairline rounded-full text-[15px] sm:text-[17px] text-apple-ink placeholder-[#86868b] focus:outline-none focus:ring-2 focus:ring-apple-blue/20 focus:border-apple-blue shadow-sm"
           />
         </div>
 
         {/* Tag Filters (Apple Capsule Chips) */}
         {allTags.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-4 mb-6 no-scrollbar">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-5 no-scrollbar">
             <button
               onClick={() => setSelectedTag(null)}
-              className={`btn-apple px-3.5 py-1.5 rounded-full text-[13px] transition-all whitespace-nowrap ${
+              className={`btn-apple px-3 sm:px-3.5 py-1.5 rounded-full text-[12px] sm:text-[13px] transition-all whitespace-nowrap ${
                 selectedTag === null
                   ? 'bg-apple-ink text-white font-medium'
                   : 'bg-white border border-apple-hairline text-apple-ink hover:bg-apple-pearl'
@@ -183,7 +191,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                 <button
                   key={tag}
                   onClick={() => setSelectedTag(isSelected ? null : tag)}
-                  className={`btn-apple px-3.5 py-1.5 rounded-full text-[13px] transition-all whitespace-nowrap ${
+                  className={`btn-apple px-3 sm:px-3.5 py-1.5 rounded-full text-[12px] sm:text-[13px] transition-all whitespace-nowrap ${
                     isSelected
                       ? 'bg-apple-blue text-white font-medium'
                       : 'bg-white border border-apple-hairline text-apple-ink hover:bg-apple-pearl'
@@ -198,21 +206,21 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
 
         {/* Empty State */}
         {filteredConnections.length === 0 && (
-          <div className="bg-white rounded-[22px] p-12 text-center border border-apple-hairline product-shadow my-8">
-            <div className="w-14 h-14 rounded-full bg-apple-parchment flex items-center justify-center mx-auto text-apple-blue mb-4">
-              <Users className="w-7 h-7" />
+          <div className="bg-white rounded-[22px] p-8 sm:p-12 text-center border border-apple-hairline product-shadow my-6">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-apple-parchment flex items-center justify-center mx-auto text-apple-blue mb-3 sm:mb-4">
+              <Users className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
-            <h3 className="text-[21px] font-semibold text-apple-ink font-display">
+            <h3 className="text-[18px] sm:text-[21px] font-semibold text-apple-ink font-display">
               No Connections Found
             </h3>
-            <p className="text-[15px] text-[#86868b] mt-1 max-w-sm mx-auto">
+            <p className="text-[13px] sm:text-[15px] text-[#86868b] mt-1 max-w-sm mx-auto">
               {searchQuery || selectedTag
-                ? 'Try adjusting your search criteria or filter tags.'
+                ? 'Try adjusting your search query or filter tags.'
                 : 'Scan peer QR codes during hackathon demos to build your verified talent graph.'}
             </p>
             <button
               onClick={onOpenScanner}
-              className="btn-apple mt-6 px-6 py-2.5 rounded-full bg-apple-blue text-white text-[14px] font-normal shadow-sm inline-flex items-center gap-2"
+              className="btn-apple mt-5 sm:mt-6 px-5 sm:px-6 py-2.5 rounded-full bg-apple-blue text-white text-[13px] sm:text-[14px] font-normal shadow-sm inline-flex items-center gap-2"
             >
               <Zap className="w-4 h-4" />
               <span>Scan First Badge</span>
@@ -221,7 +229,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
         )}
 
         {/* Store Utility Card Grid */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3.5 sm:gap-4">
           {filteredConnections.map((conn) => {
             const isExpanded = expandedId === conn.id;
             const isEditing = editingId === conn.id;
@@ -230,50 +238,70 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
               <div
                 key={conn.id}
                 onClick={() => toggleExpand(conn.id)}
-                className="bg-white rounded-[18px] border border-apple-hairline p-5 sm:p-6 product-shadow transition-all hover:border-apple-blue/30 cursor-pointer"
+                className="bg-white rounded-[18px] border border-apple-hairline p-4 sm:p-6 product-shadow transition-all hover:border-apple-blue/30 cursor-pointer"
               >
                 {/* Main Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   
                   {/* Left: Avatar & Info */}
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3.5">
                     <img
                       src={conn.peerProfile.avatarUrl}
                       alt={conn.peerProfile.name}
-                      className="w-13 h-13 rounded-[12px] object-cover border border-apple-hairline shrink-0"
+                      className="w-12 h-12 sm:w-13 sm:h-13 rounded-[12px] object-cover border border-apple-hairline shrink-0"
                     />
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-[18px] font-semibold text-apple-ink font-display">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h3 className="text-[16px] sm:text-[18px] font-semibold text-apple-ink font-display truncate">
                           {conn.peerProfile.name}
                         </h3>
-                        <span className="text-[13px] font-mono text-apple-blue">
+                        <span className="text-[12px] sm:text-[13px] font-mono text-apple-blue">
                           {conn.peerProfile.handle}
                         </span>
-                        <span className="px-2 py-0.2 bg-apple-parchment rounded-full text-[11px] font-semibold text-apple-ink border border-apple-hairline">
+                        <span className="px-2 py-0.2 bg-apple-parchment rounded-full text-[10px] sm:text-[11px] font-semibold text-apple-ink border border-apple-hairline">
                           {conn.peerProfile.tier}
                         </span>
                       </div>
 
-                      <p className="text-[14px] text-apple-ink-muted-80 font-normal mt-0.5">
+                      <p className="text-[13px] sm:text-[14px] text-apple-ink-muted-80 font-normal mt-0.5 truncate">
                         {conn.peerProfile.primaryRole}
                       </p>
 
-                      <div className="flex items-center gap-3 mt-2 text-[12px] text-[#86868b]">
+                      <div className="flex items-center gap-2 sm:gap-3 mt-1.5 text-[11px] sm:text-[12px] text-[#86868b] flex-wrap">
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-apple-blue" />
+                          <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-apple-blue" />
                           {conn.eventMet}
                         </span>
                         <span>•</span>
                         <span>{new Date(conn.timestamp).toLocaleDateString()}</span>
                         <span>•</span>
-                        <span className="text-[#30d158] font-medium">{conn.scanLatencyMs || 280}ms scan</span>
+                        <span className="text-[#30d158] font-medium">{conn.scanLatencyMs || 280}ms</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: Expand Toggle & Quick Action */}
-                  <div className="flex items-center gap-2 self-end sm:self-center">
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 self-end sm:self-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectPeer(conn.peerProfile, conn);
+                      }}
+                      className="btn-apple px-3 py-1 rounded-full bg-apple-parchment hover:bg-[#e5e5ea] text-[12px] text-apple-blue font-medium flex items-center gap-1"
+                      title="Inspect Passport"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Passport</span>
+                    </button>
+
+                    <button
+                      onClick={(e) => handleDownloadContactVCard(conn, e)}
+                      className="btn-apple p-2 rounded-full hover:bg-apple-parchment text-[#86868b] hover:text-apple-ink transition-colors"
+                      title="Save to Phone Contacts (.vcf)"
+                    >
+                      <Download className="w-4 h-4 text-apple-blue" />
+                    </button>
+
                     <button
                       onClick={(e) => handleCopyContact(conn, e)}
                       className="btn-apple p-2 rounded-full hover:bg-apple-parchment text-[#86868b] hover:text-apple-ink transition-colors"
@@ -287,7 +315,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                     </button>
 
                     <div className="p-1 rounded-full text-[#86868b]">
-                      {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      {isExpanded ? <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" /> : <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </div>
                   </div>
                 </div>
@@ -295,13 +323,13 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                 {/* Expanded Details Section */}
                 {isExpanded && (
                   <div
-                    className="mt-5 pt-5 border-t border-apple-hairline space-y-4"
+                    className="mt-4 pt-4 sm:mt-5 sm:pt-5 border-t border-apple-hairline space-y-4"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Private Contextual Note */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[13px] font-semibold text-apple-ink flex items-center gap-1.5">
+                        <label className="text-[12px] sm:text-[13px] font-semibold text-apple-ink flex items-center gap-1.5">
                           <FileText className="w-3.5 h-3.5 text-apple-blue" />
                           <span>Private Contextual Note</span>
                         </label>
@@ -311,7 +339,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                             className="text-[12px] text-apple-blue hover:underline flex items-center gap-1"
                           >
                             <Edit3 className="w-3 h-3" />
-                            <span>Edit Note</span>
+                            <span>Edit</span>
                           </button>
                         )}
                       </div>
@@ -322,7 +350,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                             value={editNotes}
                             onChange={(e) => setEditNotes(e.target.value)}
                             rows={3}
-                            className="w-full px-3.5 py-2.5 bg-apple-parchment border border-apple-hairline rounded-xl text-[14px] text-apple-ink focus:outline-none focus:border-apple-blue"
+                            className="w-full px-3.5 py-2.5 bg-apple-parchment border border-apple-hairline rounded-xl text-[13px] sm:text-[14px] text-apple-ink focus:outline-none focus:border-apple-blue"
                           />
                           <div className="flex justify-end gap-2">
                             <button
@@ -335,12 +363,12 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                               onClick={(e) => handleSaveEdit(conn.id, e)}
                               className="btn-apple px-3.5 py-1 text-[12px] rounded-full bg-apple-blue text-white"
                             >
-                              Save Note
+                              Save
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-[14px] text-apple-ink leading-relaxed p-3 bg-apple-parchment rounded-xl border border-apple-hairline/60">
+                        <p className="text-[13px] sm:text-[14px] text-apple-ink leading-relaxed p-3 bg-apple-parchment rounded-xl border border-apple-hairline/60">
                           {conn.privateNotes || 'No notes added yet.'}
                         </p>
                       )}
@@ -349,7 +377,7 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                     {/* Tag Badges */}
                     {conn.tags && conn.tags.length > 0 && (
                       <div className="space-y-1.5">
-                        <span className="text-[12px] font-semibold text-apple-ink flex items-center gap-1">
+                        <span className="text-[11px] sm:text-[12px] font-semibold text-apple-ink flex items-center gap-1">
                           <Tag className="w-3 h-3 text-apple-blue" />
                           <span>Tags</span>
                         </span>
@@ -367,17 +395,15 @@ export const ConnectionsList: React.FC<ConnectionsListProps> = ({
                     )}
 
                     {/* Actions Row */}
-                    <div className="flex items-center justify-between pt-3 border-t border-apple-hairline text-[13px]">
+                    <div className="flex items-center justify-between pt-3 border-t border-apple-hairline text-[12px] sm:text-[13px] flex-wrap gap-2">
                       <div className="flex items-center gap-3">
-                        <a
-                          href={`https://github.com/${conn.peerProfile.handle.replace('@', '')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-apple-blue hover:underline flex items-center gap-1"
+                        <button
+                          onClick={() => onSelectPeer(conn.peerProfile, conn)}
+                          className="text-apple-blue hover:underline flex items-center gap-1 font-medium"
                         >
-                          <span>GitHub Profile</span>
+                          <span>Inspect Full Skill Radar</span>
                           <ExternalLink className="w-3 h-3" />
-                        </a>
+                        </button>
                       </div>
 
                       <button

@@ -4,12 +4,15 @@ import {
   EventFeedItem,
   QrPayload,
   ActivityNode,
+  SignUpData,
+  LoginCredentials,
 } from '../types';
 
 const STORAGE_KEYS = {
-  USER_PROFILE: 'loopin_user_profile_v1',
-  CONNECTIONS: 'loopin_connections_v1',
-  COMMUNITY_FEED: 'loopin_community_feed_v1',
+  USER_PROFILE: 'loopin_user_profile_v2',
+  AUTH_TOKEN: 'loopin_auth_token_v2',
+  CONNECTIONS: 'loopin_connections_v2',
+  COMMUNITY_FEED: 'loopin_community_feed_v2',
 };
 
 // Generate 52 weeks of mock activity data with hackathon spikes
@@ -44,7 +47,7 @@ function generateMockActivity(): ActivityNode[] {
     );
 
     if (hackathon) {
-      count = Math.floor(Math.random() * 10) + 12; // 12-22 commits on hackathons
+      count = Math.floor(Math.random() * 10) + 12;
       eventId = hackathon.eventId;
     } else if (isWeekend) {
       count = Math.random() > 0.4 ? Math.floor(Math.random() * 8) + 2 : 0;
@@ -58,297 +61,227 @@ function generateMockActivity(): ActivityNode[] {
   return nodes;
 }
 
-// Initial Mock User: Garvit Prakash (@gpdev)
-const INITIAL_AUTH_USER: UserProfile = {
-  id: 'usr_garvit_prakash_001',
-  handle: '@gpdev',
-  name: 'Garvit Prakash',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-  bio: 'Principal AI Architect & Systems Engineer. Building autonomous agent swarms, sub-millisecond edge telemetry & high-speed mobile runtimes.',
-  primaryRole: 'Full-Stack AI & Systems Architect',
-  githubUsername: 'garvit-prakash',
-  linkedinUrl: 'https://linkedin.com/in/garvit-prakash',
-  portfolioUrl: 'https://github.com/garvit-prakash',
-  tier: 'Grandmaster',
-  xpPoints: 18450,
-  nextTierXp: 20000,
-  rankPosition: 3,
-  totalHackathonsAttended: 14,
-  badgeHash: 'sha256:8f4c9a12e3b76541d019fec38aa10b54e79124cb115984620adcbfe9082a4531',
-  radarSkills: [
-    { category: 'AI/ML Systems', score: 96, maxScore: 100, verifiedCommits: 420 },
-    { category: 'Systems & Rust', score: 88, maxScore: 100, verifiedCommits: 280 },
-    { category: 'Frontend & UI', score: 94, maxScore: 100, verifiedCommits: 390 },
-    { category: 'Distributed Sys', score: 86, maxScore: 100, verifiedCommits: 195 },
-    { category: 'Web3 & Security', score: 79, maxScore: 100, verifiedCommits: 110 },
-    { category: 'DevOps & Cloud', score: 85, maxScore: 100, verifiedCommits: 160 },
-  ],
-  activityMatrix: generateMockActivity(),
-  stamps: [
-    {
-      id: 'stamp_01',
-      eventId: 'evt_genesis_2026',
-      eventName: 'Genesis Hacks 2026',
-      date: 'Aug 28-30, 2026',
-      organizerSignature: 'GENESIS_CORE_0x98A1',
-      location: 'Bengaluru, IN',
-      roleTag: 'Track Winner (1st)',
-      verified: true,
-      hash: 'sig_rsa_4096_verified_994a',
-    },
-    {
-      id: 'stamp_02',
-      eventId: 'evt_iqoo_2k',
-      eventName: 'iQOO 2K Hackathon',
-      date: 'Jul 14-16, 2026',
-      organizerSignature: 'IQOO_DEV_REL_0x55B2',
-      location: 'Hyderabad, IN',
-      roleTag: '1st Place Edge AI',
-      verified: true,
-      hash: 'sig_rsa_4096_verified_441c',
-    },
-    {
-      id: 'stamp_03',
-      eventId: 'evt_hackers_occupied_pune',
-      eventName: 'Hackers Occupied Pune',
-      date: 'May 10-12, 2026',
-      organizerSignature: 'HOP_COMMITTEE_0x77C3',
-      location: 'Pune, IN',
-      roleTag: '2nd Place Systems',
-      verified: true,
-      hash: 'sig_rsa_4096_verified_118e',
-    },
-    {
-      id: 'stamp_04',
-      eventId: 'evt_ethindia_2025',
-      eventName: 'ETHIndia Hackathon',
-      date: 'Dec 05-07, 2025',
-      organizerSignature: 'ETH_GLOBAL_0x33F9',
-      location: 'Bengaluru, IN',
-      roleTag: 'Top 10 Finalist',
-      verified: true,
-      hash: 'sig_rsa_4096_verified_220a',
-    },
-  ],
-  trophies: [
-    {
-      id: 'trophy_01',
-      eventName: 'Genesis Hacks 2026',
-      trackName: 'Autonomous AI Agents & RAG',
-      rank: '1st',
-      year: '2026',
-      iconKey: 'trophy-gold',
-    },
-    {
-      id: 'trophy_02',
-      eventName: 'iQOO 2K Hackathon',
-      trackName: 'On-Device Mobile Inference',
-      rank: '1st',
-      year: '2026',
-      iconKey: 'trophy-gold',
-    },
-    {
-      id: 'trophy_03',
-      eventName: 'Hackers Occupied Pune',
-      trackName: 'High-Throughput P2P Relays',
-      rank: '2nd',
-      year: '2026',
-      iconKey: 'trophy-silver',
-    },
-    {
-      id: 'trophy_04',
-      eventName: 'ETHIndia 2025',
-      trackName: 'Zero-Knowledge Credentialing',
-      rank: 'Special Bounty',
-      year: '2025',
-      iconKey: 'trophy-purple',
-    },
-  ],
-  vouches: [
-    {
-      id: 'vouch_01',
-      voucherHandle: '@ananya_ml',
-      voucherName: 'Ananya Sharma',
-      voucherAvatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80',
-      moduleName: 'Autonomous Agent Engine & Vector Indexing',
-      comment: 'Engineered the sub-400ms QR decoding pipeline and vector indexing backend for our team in 36 hours flat. Absolutely top tier.',
-      verifiedAt: 'Genesis Hacks 2026',
-    },
-    {
-      id: 'vouch_02',
-      voucherHandle: '@rohan_sys',
-      voucherName: 'Rohan Mehta',
-      voucherAvatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-      moduleName: 'Rust WebAssembly Memory Optimization',
-      comment: 'Cracked the zero-copy buffer serialization between native Android and web runtime during our finals demo.',
-      verifiedAt: 'Hackers Occupied Pune',
-    },
-    {
-      id: 'vouch_03',
-      voucherHandle: '@priya_ui',
-      voucherName: 'Priya Nair',
-      voucherAvatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80',
-      moduleName: 'GPU-Accelerated Holographic Shaders',
-      comment: 'Designed full tactile feedback loops and high-density telemetry dashboards with zero frame drops.',
-      verifiedAt: 'iQOO 2K Hackathon',
-    },
-  ],
-};
+// Initial Mock Users Directory
+export const DEMO_USERS: UserProfile[] = [
+  {
+    id: 'usr_garvit_prakash_001',
+    email: 'garvit@genesishacks.dev',
+    handle: '@gpdev',
+    name: 'Garvit Prakash',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+    bio: 'Principal AI Architect & Systems Engineer. Building autonomous agent swarms, sub-millisecond edge telemetry & high-speed mobile runtimes.',
+    primaryRole: 'Full-Stack AI & Systems Architect',
+    githubUsername: 'garvit-prakash',
+    linkedinUrl: 'https://linkedin.com/in/garvit-prakash',
+    portfolioUrl: 'https://github.com/garvit-prakash',
+    tier: 'Grandmaster',
+    xpPoints: 18450,
+    nextTierXp: 20000,
+    rankPosition: 3,
+    totalHackathonsAttended: 14,
+    badgeHash: 'sha256:8f4c9a12e3b76541d019fec38aa10b54e79124cb115984620adcbfe9082a4531',
+    radarSkills: [
+      { category: 'AI/ML Systems', score: 96, maxScore: 100, verifiedCommits: 420 },
+      { category: 'Systems & Rust', score: 88, maxScore: 100, verifiedCommits: 280 },
+      { category: 'Frontend & UI', score: 94, maxScore: 100, verifiedCommits: 390 },
+      { category: 'Distributed Sys', score: 86, maxScore: 100, verifiedCommits: 195 },
+      { category: 'Web3 & Security', score: 79, maxScore: 100, verifiedCommits: 110 },
+      { category: 'DevOps & Cloud', score: 85, maxScore: 100, verifiedCommits: 160 },
+    ],
+    activityMatrix: generateMockActivity(),
+    stamps: [
+      {
+        id: 'stamp_01',
+        eventId: 'evt_genesis_2026',
+        eventName: 'Genesis Hacks 2026',
+        date: 'Aug 28-30, 2026',
+        organizerSignature: 'GENESIS_CORE_0x98A1',
+        location: 'Bengaluru, IN',
+        roleTag: 'Track Winner (1st)',
+        verified: true,
+        hash: 'sig_rsa_4096_verified_994a',
+      },
+      {
+        id: 'stamp_02',
+        eventId: 'evt_iqoo_2k',
+        eventName: 'iQOO 2K Hackathon',
+        date: 'Jul 14-16, 2026',
+        organizerSignature: 'IQOO_DEV_REL_0x55B2',
+        location: 'Hyderabad, IN',
+        roleTag: '1st Place Edge AI',
+        verified: true,
+        hash: 'sig_rsa_4096_verified_441c',
+      },
+      {
+        id: 'stamp_03',
+        eventId: 'evt_hackers_occupied_pune',
+        eventName: 'Hackers Occupied Pune',
+        date: 'May 10-12, 2026',
+        organizerSignature: 'HOP_COMMITTEE_0x77C3',
+        location: 'Pune, IN',
+        roleTag: '2nd Place Systems',
+        verified: true,
+        hash: 'sig_rsa_4096_verified_118e',
+      },
+    ],
+    trophies: [
+      {
+        id: 'trophy_01',
+        eventName: 'Genesis Hacks 2026',
+        trackName: 'Autonomous AI Agents & RAG',
+        rank: '1st',
+        year: '2026',
+        iconKey: 'trophy-gold',
+      },
+      {
+        id: 'trophy_02',
+        eventName: 'iQOO 2K Hackathon',
+        trackName: 'On-Device Mobile Inference',
+        rank: '1st',
+        year: '2026',
+        iconKey: 'trophy-gold',
+      },
+      {
+        id: 'trophy_03',
+        eventName: 'Hackers Occupied Pune',
+        trackName: 'High-Throughput P2P Relays',
+        rank: '2nd',
+        year: '2026',
+        iconKey: 'trophy-silver',
+      },
+    ],
+    vouches: [
+      {
+        id: 'vouch_01',
+        voucherHandle: '@ananya_ml',
+        voucherName: 'Ananya Sharma',
+        voucherAvatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80',
+        moduleName: 'Autonomous Agent Engine & Vector Indexing',
+        comment: 'Engineered the sub-400ms QR decoding pipeline and vector indexing backend for our team in 36 hours flat.',
+        verifiedAt: 'Genesis Hacks 2026',
+      },
+      {
+        id: 'vouch_02',
+        voucherHandle: '@rohan_sys',
+        voucherName: 'Rohan Mehta',
+        voucherAvatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
+        moduleName: 'Rust WebAssembly Memory Optimization',
+        comment: 'Cracked the zero-copy buffer serialization between native Android and web runtime during our finals demo.',
+        verifiedAt: 'Hackers Occupied Pune',
+      },
+    ],
+  },
+  {
+    id: 'usr_ananya_002',
+    email: 'ananya@neurosys.ai',
+    handle: '@ananya_ml',
+    name: 'Ananya Sharma',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+    bio: 'Research Scientist @ NeuroSys. Specializing in Graph Neural Networks, LLM agent alignment, and multi-modal embeddings.',
+    primaryRole: 'AI/ML Research Engineer',
+    githubUsername: 'ananya-sharma-ml',
+    linkedinUrl: 'https://linkedin.com/in/ananya-sharma',
+    portfolioUrl: 'https://github.com/ananya-sharma-ml',
+    tier: 'Grandmaster',
+    xpPoints: 16900,
+    nextTierXp: 20000,
+    rankPosition: 5,
+    totalHackathonsAttended: 11,
+    badgeHash: 'sha256:77bc09912aaee41209bca348810239128f7450',
+    radarSkills: [
+      { category: 'AI/ML Systems', score: 98, maxScore: 100, verifiedCommits: 510 },
+      { category: 'Systems & Rust', score: 74, maxScore: 100, verifiedCommits: 140 },
+      { category: 'Frontend & UI', score: 68, maxScore: 100, verifiedCommits: 90 },
+      { category: 'Distributed Sys', score: 89, maxScore: 100, verifiedCommits: 230 },
+      { category: 'Web3 & Security', score: 60, maxScore: 100, verifiedCommits: 50 },
+      { category: 'DevOps & Cloud', score: 82, maxScore: 100, verifiedCommits: 160 },
+    ],
+    activityMatrix: generateMockActivity(),
+    stamps: [
+      {
+        id: 's_ananya_01',
+        eventId: 'evt_genesis_2026',
+        eventName: 'Genesis Hacks 2026',
+        date: 'Aug 28-30, 2026',
+        organizerSignature: 'GENESIS_CORE_0x98A1',
+        location: 'Bengaluru, IN',
+        roleTag: 'Team Co-lead',
+        verified: true,
+        hash: 'sig_rsa_4096_verified_ananya_1',
+      },
+    ],
+    trophies: [
+      {
+        id: 't_ananya_01',
+        eventName: 'Genesis Hacks 2026',
+        trackName: 'Autonomous AI Agents',
+        rank: '1st',
+        year: '2026',
+        iconKey: 'trophy-gold',
+      },
+    ],
+    vouches: [],
+  },
+  {
+    id: 'usr_rohan_003',
+    email: 'rohan@kernelhacks.io',
+    handle: '@rohan_sys',
+    name: 'Rohan Mehta',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+    bio: 'Low-latency systems hacker. Building lock-free queues, Linux kernel eBPF observability, and Rust networking primitives.',
+    primaryRole: 'Systems & Kernel Engineer',
+    githubUsername: 'rohanm-sys',
+    linkedinUrl: 'https://linkedin.com/in/rohan-mehta-sys',
+    portfolioUrl: 'https://github.com/rohanm-sys',
+    tier: 'Veteran',
+    xpPoints: 14200,
+    nextTierXp: 15000,
+    rankPosition: 12,
+    totalHackathonsAttended: 9,
+    badgeHash: 'sha256:99bb114400aacc88319e712390fcaabbc88123',
+    radarSkills: [
+      { category: 'AI/ML Systems', score: 62, maxScore: 100, verifiedCommits: 90 },
+      { category: 'Systems & Rust', score: 99, maxScore: 100, verifiedCommits: 620 },
+      { category: 'Frontend & UI', score: 55, maxScore: 100, verifiedCommits: 60 },
+      { category: 'Distributed Sys', score: 94, maxScore: 100, verifiedCommits: 410 },
+      { category: 'Web3 & Security', score: 81, maxScore: 100, verifiedCommits: 180 },
+      { category: 'DevOps & Cloud', score: 90, maxScore: 100, verifiedCommits: 310 },
+    ],
+    activityMatrix: generateMockActivity(),
+    stamps: [],
+    trophies: [
+      {
+        id: 't_rohan_01',
+        eventName: 'Hackers Occupied Pune',
+        trackName: 'P2P Relays',
+        rank: '2nd',
+        year: '2026',
+        iconKey: 'trophy-silver',
+      },
+    ],
+    vouches: [],
+  },
+];
 
 // Rich initial Connections dataset
 const INITIAL_CONNECTIONS: Connection[] = [
   {
     id: 'conn_001',
-    peerProfile: {
-      id: 'usr_ananya_002',
-      handle: '@ananya_ml',
-      name: 'Ananya Sharma',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-      bio: 'Research Scientist @ NeuroSys. Specializing in Graph Neural Networks, LLM agent alignment, and multi-modal embeddings.',
-      primaryRole: 'AI/ML Research Engineer',
-      githubUsername: 'ananya-sharma-ml',
-      linkedinUrl: 'https://linkedin.com/in/ananya-sharma',
-      portfolioUrl: 'https://github.com/ananya-sharma-ml',
-      tier: 'Grandmaster',
-      xpPoints: 16900,
-      nextTierXp: 20000,
-      rankPosition: 5,
-      totalHackathonsAttended: 11,
-      badgeHash: 'sha256:77bc09912aaee41209bca348810239128f7450',
-      radarSkills: [
-        { category: 'AI/ML Systems', score: 98, maxScore: 100, verifiedCommits: 510 },
-        { category: 'Systems & Rust', score: 74, maxScore: 100, verifiedCommits: 140 },
-        { category: 'Frontend & UI', score: 68, maxScore: 100, verifiedCommits: 90 },
-        { category: 'Distributed Sys', score: 89, maxScore: 100, verifiedCommits: 230 },
-        { category: 'Web3 & Security', score: 60, maxScore: 100, verifiedCommits: 50 },
-        { category: 'DevOps & Cloud', score: 82, maxScore: 100, verifiedCommits: 160 },
-      ],
-      activityMatrix: [],
-      stamps: [
-        {
-          id: 's_ananya_01',
-          eventId: 'evt_genesis_2026',
-          eventName: 'Genesis Hacks 2026',
-          date: 'Aug 28-30, 2026',
-          organizerSignature: 'GENESIS_CORE_0x98A1',
-          location: 'Bengaluru, IN',
-          roleTag: 'Team Co-lead',
-          verified: true,
-          hash: 'sig_rsa_4096_verified_ananya_1',
-        },
-      ],
-      trophies: [
-        {
-          id: 't_ananya_01',
-          eventName: 'Genesis Hacks 2026',
-          trackName: 'Autonomous AI Agents',
-          rank: '1st',
-          year: '2026',
-          iconKey: 'trophy-gold',
-        },
-      ],
-      vouches: [],
-    },
+    peerProfile: DEMO_USERS[1], // Ananya Sharma
     timestamp: '2026-08-30T14:22:10Z',
     privateNotes: 'Met at Track 1 presentation. Great discussion on integrating custom GNNs with our fast QR edge indexer. Follow up next Tuesday.',
-    tags: ['AI/ML', 'Genesis 2026', 'Potential Co-Founder', 'High-Conviction'],
+    tags: ['AI/ML Systems', 'Genesis 2026', 'Potential Co-Founder', 'High-Conviction'],
     eventMet: 'Genesis Hacks 2026',
     scanLatencyMs: 312,
   },
   {
     id: 'conn_002',
-    peerProfile: {
-      id: 'usr_rohan_003',
-      handle: '@rohan_sys',
-      name: 'Rohan Mehta',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-      bio: 'Low-latency systems hacker. Building lock-free queues, Linux kernel eBPF observability, and Rust networking primitives.',
-      primaryRole: 'Systems & Kernel Engineer',
-      githubUsername: 'rohanm-sys',
-      linkedinUrl: 'https://linkedin.com/in/rohan-mehta-sys',
-      portfolioUrl: 'https://github.com/rohanm-sys',
-      tier: 'Veteran',
-      xpPoints: 14200,
-      nextTierXp: 15000,
-      rankPosition: 12,
-      totalHackathonsAttended: 9,
-      badgeHash: 'sha256:99bb114400aacc88319e712390fcaabbc88123',
-      radarSkills: [
-        { category: 'AI/ML Systems', score: 62, maxScore: 100, verifiedCommits: 90 },
-        { category: 'Systems & Rust', score: 99, maxScore: 100, verifiedCommits: 620 },
-        { category: 'Frontend & UI', score: 55, maxScore: 100, verifiedCommits: 60 },
-        { category: 'Distributed Sys', score: 94, maxScore: 100, verifiedCommits: 410 },
-        { category: 'Web3 & Security', score: 81, maxScore: 100, verifiedCommits: 180 },
-        { category: 'DevOps & Cloud', score: 90, maxScore: 100, verifiedCommits: 310 },
-      ],
-      activityMatrix: [],
-      stamps: [
-        {
-          id: 's_rohan_01',
-          eventId: 'evt_hackers_occupied_pune',
-          eventName: 'Hackers Occupied Pune',
-          date: 'May 10-12, 2026',
-          organizerSignature: 'HOP_COMMITTEE_0x77C3',
-          location: 'Pune, IN',
-          roleTag: 'Podium Finish',
-          verified: true,
-          hash: 'sig_rsa_4096_verified_rohan_1',
-        },
-      ],
-      trophies: [
-        {
-          id: 't_rohan_01',
-          eventName: 'Hackers Occupied Pune',
-          trackName: 'P2P Relays',
-          rank: '2nd',
-          year: '2026',
-          iconKey: 'trophy-silver',
-        },
-      ],
-      vouches: [],
-    },
+    peerProfile: DEMO_USERS[2], // Rohan Mehta
     timestamp: '2026-08-29T18:45:00Z',
     privateNotes: 'Wants to collaborate on open-source eBPF network telemetry for hackathon clusters.',
     tags: ['Rust/Systems', 'High-Conviction', 'Infrastructure'],
     eventMet: 'Genesis Hacks 2026',
     scanLatencyMs: 278,
-  },
-  {
-    id: 'conn_003',
-    peerProfile: {
-      id: 'usr_priya_004',
-      handle: '@priya_ui',
-      name: 'Priya Nair',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80',
-      bio: 'Design Engineer bridging Figma tokens with WebGL and React Three Fiber. Obsessed with micro-interactions and tactile UI.',
-      primaryRole: 'Lead UI/UX Design Engineer',
-      githubUsername: 'priya-design-code',
-      linkedinUrl: 'https://linkedin.com/in/priya-nair-ui',
-      portfolioUrl: 'https://github.com/priya-design-code',
-      tier: 'Veteran',
-      xpPoints: 13800,
-      nextTierXp: 15000,
-      rankPosition: 18,
-      totalHackathonsAttended: 8,
-      badgeHash: 'sha256:44aa00998822eeff11335577662244bbccdd',
-      radarSkills: [
-        { category: 'AI/ML Systems', score: 65, maxScore: 100, verifiedCommits: 80 },
-        { category: 'Systems & Rust', score: 50, maxScore: 100, verifiedCommits: 40 },
-        { category: 'Frontend & UI', score: 99, maxScore: 100, verifiedCommits: 580 },
-        { category: 'Distributed Sys', score: 60, maxScore: 100, verifiedCommits: 75 },
-        { category: 'Web3 & Security', score: 70, maxScore: 100, verifiedCommits: 90 },
-        { category: 'DevOps & Cloud', score: 75, maxScore: 100, verifiedCommits: 110 },
-      ],
-      activityMatrix: [],
-      stamps: [],
-      trophies: [],
-      vouches: [],
-    },
-    timestamp: '2026-08-28T22:15:30Z',
-    privateNotes: 'Designed the Genesis brand assets. Talked about holographic shader implementations in CSS/Canvas.',
-    tags: ['Frontend & UI', 'Figma', 'Genesis 2026'],
-    eventMet: 'Genesis Hacks 2026',
-    scanLatencyMs: 345,
   },
 ];
 
@@ -403,8 +336,10 @@ const INITIAL_COMMUNITY_FEED: EventFeedItem[] = [
 
 // Mock Peers for fast test scanning simulation
 export const MOCK_TEST_PEERS: UserProfile[] = [
+  ...DEMO_USERS,
   {
     id: 'usr_marcus_005',
+    email: 'marcus@raftdb.org',
     handle: '@marcus_v',
     name: 'Marcus Vance',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
@@ -427,7 +362,7 @@ export const MOCK_TEST_PEERS: UserProfile[] = [
       { category: 'Web3 & Security', score: 85, maxScore: 100, verifiedCommits: 210 },
       { category: 'DevOps & Cloud', score: 92, maxScore: 100, verifiedCommits: 380 },
     ],
-    activityMatrix: [],
+    activityMatrix: generateMockActivity(),
     stamps: [
       {
         id: 's_marcus_01',
@@ -455,6 +390,7 @@ export const MOCK_TEST_PEERS: UserProfile[] = [
   },
   {
     id: 'usr_elena_006',
+    email: 'elena@zksnarks.org',
     handle: '@elena_zk',
     name: 'Elena Rostova',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
@@ -477,7 +413,7 @@ export const MOCK_TEST_PEERS: UserProfile[] = [
       { category: 'Web3 & Security', score: 99, maxScore: 100, verifiedCommits: 590 },
       { category: 'DevOps & Cloud', score: 76, maxScore: 100, verifiedCommits: 110 },
     ],
-    activityMatrix: [],
+    activityMatrix: generateMockActivity(),
     stamps: [],
     trophies: [],
     vouches: [],
@@ -525,9 +461,146 @@ class ReactiveStore {
     });
   }
 
+  // Auth Methods
+  public getAuthToken(): string | null {
+    return this.load<string | null>(STORAGE_KEYS.AUTH_TOKEN, 'tok_genesis_session_active');
+  }
+
+  public isAuthenticated(): boolean {
+    return Boolean(this.getAuthToken());
+  }
+
+  public loginWithEmail(credentials: LoginCredentials): UserProfile {
+    const email = credentials.email?.toLowerCase().trim() || 'garvit@genesishacks.dev';
+    const found = DEMO_USERS.find((u) => u.email?.toLowerCase() === email) || DEMO_USERS[0];
+    
+    this.save(STORAGE_KEYS.AUTH_TOKEN, `tok_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
+    this.save(STORAGE_KEYS.USER_PROFILE, found);
+    return found;
+  }
+
+  public loginWithGitHub(username: string): UserProfile {
+    const cleanUser = username.trim().replace(/^@/, '');
+    const found = DEMO_USERS.find((u) => u.githubUsername?.toLowerCase() === cleanUser.toLowerCase());
+    
+    const userProfile: UserProfile = found || {
+      id: `usr_gh_${cleanUser}`,
+      email: `${cleanUser}@github.dev`,
+      handle: `@${cleanUser}`,
+      name: cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1),
+      avatarUrl: `https://github.com/${cleanUser}.png`,
+      bio: `Verified GitHub Hacker (${cleanUser}). Passionate about hackathons and high-speed software.`,
+      primaryRole: 'Full-Stack Software Engineer',
+      githubUsername: cleanUser,
+      linkedinUrl: '',
+      portfolioUrl: `https://github.com/${cleanUser}`,
+      tier: 'Builder',
+      xpPoints: 12000,
+      nextTierXp: 15000,
+      rankPosition: 48,
+      totalHackathonsAttended: 3,
+      badgeHash: `sha256:gh_${Math.random().toString(36).substring(2, 14)}`,
+      radarSkills: [
+        { category: 'AI/ML Systems', score: 75, maxScore: 100, verifiedCommits: 90 },
+        { category: 'Systems & Rust', score: 70, maxScore: 100, verifiedCommits: 60 },
+        { category: 'Frontend & UI', score: 85, maxScore: 100, verifiedCommits: 180 },
+        { category: 'Distributed Sys', score: 70, maxScore: 100, verifiedCommits: 50 },
+        { category: 'Web3 & Security', score: 65, maxScore: 100, verifiedCommits: 40 },
+        { category: 'DevOps & Cloud', score: 75, maxScore: 100, verifiedCommits: 80 },
+      ],
+      activityMatrix: generateMockActivity(),
+      stamps: [
+        {
+          id: `s_${Date.now()}`,
+          eventId: 'evt_genesis_2026',
+          eventName: 'Genesis Hacks 2026',
+          date: 'Aug 28-30, 2026',
+          organizerSignature: 'GENESIS_CORE_0x98A1',
+          location: 'Bengaluru, IN',
+          roleTag: 'Hacker',
+          verified: true,
+          hash: 'sig_genesis_v1',
+        },
+      ],
+      trophies: [],
+      vouches: [],
+    };
+
+    this.save(STORAGE_KEYS.AUTH_TOKEN, `tok_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
+    this.save(STORAGE_KEYS.USER_PROFILE, userProfile);
+    return userProfile;
+  }
+
+  public signup(data: SignUpData): UserProfile {
+    const handle = data.handle.startsWith('@') ? data.handle : `@${data.handle}`;
+    const newProfile: UserProfile = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      email: data.email,
+      handle,
+      name: data.name,
+      avatarUrl: data.githubUsername
+        ? `https://github.com/${data.githubUsername.replace(/^@/, '')}.png`
+        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      bio: data.bio || `Genesis Hacker specializing in ${data.primaryRole}.`,
+      primaryRole: data.primaryRole,
+      githubUsername: data.githubUsername ? data.githubUsername.replace(/^@/, '') : '',
+      linkedinUrl: '',
+      portfolioUrl: '',
+      tier: 'Builder',
+      xpPoints: 10000,
+      nextTierXp: 15000,
+      rankPosition: 54,
+      totalHackathonsAttended: 1,
+      badgeHash: `sha256:genesis_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+      radarSkills: [
+        { category: 'AI/ML Systems', score: 70, maxScore: 100, verifiedCommits: 50 },
+        { category: 'Systems & Rust', score: 65, maxScore: 100, verifiedCommits: 40 },
+        { category: 'Frontend & UI', score: 80, maxScore: 100, verifiedCommits: 110 },
+        { category: 'Distributed Sys', score: 60, maxScore: 100, verifiedCommits: 30 },
+        { category: 'Web3 & Security', score: 60, maxScore: 100, verifiedCommits: 30 },
+        { category: 'DevOps & Cloud', score: 70, maxScore: 100, verifiedCommits: 60 },
+      ],
+      activityMatrix: generateMockActivity(),
+      stamps: [
+        {
+          id: `s_${Date.now()}`,
+          eventId: 'evt_genesis_2026',
+          eventName: 'Genesis Hacks 2026',
+          date: 'Aug 28-30, 2026',
+          organizerSignature: 'GENESIS_CORE_0x98A1',
+          location: 'Bengaluru, IN',
+          roleTag: 'Registered Builder',
+          verified: true,
+          hash: 'sig_genesis_2026',
+        },
+      ],
+      trophies: [],
+      vouches: [],
+    };
+
+    this.save(STORAGE_KEYS.AUTH_TOKEN, `tok_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
+    this.save(STORAGE_KEYS.USER_PROFILE, newProfile);
+    return newProfile;
+  }
+
+  public switchDemoAccount(userId: string): UserProfile {
+    const found = DEMO_USERS.find((u) => u.id === userId) || DEMO_USERS[0];
+    this.save(STORAGE_KEYS.USER_PROFILE, found);
+    return found;
+  }
+
+  public logout(): void {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    this.notify();
+  }
+
+  public getDemoAccounts(): UserProfile[] {
+    return DEMO_USERS;
+  }
+
   // User Profile Methods
   public getUser(): UserProfile {
-    return this.load<UserProfile>(STORAGE_KEYS.USER_PROFILE, INITIAL_AUTH_USER);
+    return this.load<UserProfile>(STORAGE_KEYS.USER_PROFILE, DEMO_USERS[0]);
   }
 
   public updateUser(partial: Partial<UserProfile>): UserProfile {
@@ -550,7 +623,6 @@ class ReactiveStore {
     eventMet = 'Genesis Hacks 2026'
   ): Connection {
     const connections = this.getConnections();
-    // Check if connection already exists, if so update it
     const existingIndex = connections.findIndex((c) => c.peerProfile.id === peerProfile.id);
 
     const newConnection: Connection = {
