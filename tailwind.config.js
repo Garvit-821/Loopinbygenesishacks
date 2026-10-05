@@ -1,107 +1,156 @@
+// @ts-check
+import plugin from 'tailwindcss/plugin';
+import animate from 'tailwindcss-animate';
+
+/**
+ * Loopin design tokens. Every color is a CSS variable holding RGB channels (defined for light and dark in
+ * src/index.css), so opacity modifiers work: `bg-accent/10`. Components use ONLY these semantic names.
+ */
+const token = (/** @type {string} */ name) => `rgb(var(--${name}) / <alpha-value>)`;
+
+const env = (/** @type {string} */ side) => `env(safe-area-inset-${side}, 0px)`;
+
+/** Safe-area utilities: `pt-safe`, `pb-safe-offset-4` (inset + 1rem), `pb-safe-or-4` (max(inset, 1rem)), `bottom-safe-offset-4`. */
+const safeArea = plugin(({ addUtilities, matchUtilities, theme }) => {
+  addUtilities({
+    '.pt-safe': { paddingTop: env('top') },
+    '.pr-safe': { paddingRight: env('right') },
+    '.pb-safe': { paddingBottom: env('bottom') },
+    '.pl-safe': { paddingLeft: env('left') },
+    '.px-safe': { paddingLeft: env('left'), paddingRight: env('right') },
+    '.py-safe': { paddingTop: env('top'), paddingBottom: env('bottom') },
+  });
+  /** @type {Record<string, (value: string) => Record<string, string>>} */
+  const offsetUtilities = {};
+  for (const [key, side, props] of /** @type {const} */ ([
+    ['pt', 'top', ['paddingTop']],
+    ['pr', 'right', ['paddingRight']],
+    ['pb', 'bottom', ['paddingBottom']],
+    ['pl', 'left', ['paddingLeft']],
+    ['top', 'top', ['top']],
+    ['bottom', 'bottom', ['bottom']],
+  ])) {
+    offsetUtilities[`${key}-safe-offset`] = (value) => Object.fromEntries(props.map((p) => [p, `calc(${env(side)} + ${value})`]));
+    offsetUtilities[`${key}-safe-or`] = (value) => Object.fromEntries(props.map((p) => [p, `max(${env(side)}, ${value})`]));
+  }
+  offsetUtilities['px-safe-offset'] = (value) => ({
+    paddingLeft: `calc(${env('left')} + ${value})`,
+    paddingRight: `calc(${env('right')} + ${value})`,
+  });
+  offsetUtilities['px-safe-or'] = (value) => ({
+    paddingLeft: `max(${env('left')}, ${value})`,
+    paddingRight: `max(${env('right')}, ${value})`,
+  });
+  matchUtilities(offsetUtilities, { values: theme('spacing') });
+});
+
+/** Frosted bar material, avatar gradients and small helpers that need more than one declaration. */
+const materials = plugin(({ addUtilities }) => {
+  addUtilities({
+    '.frosted': {
+      backgroundColor: 'rgb(var(--bar) / var(--bar-alpha))',
+      '-webkit-backdrop-filter': 'saturate(180%) blur(20px)',
+      backdropFilter: 'saturate(180%) blur(20px)',
+      '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))': {
+        backgroundColor: 'rgb(var(--bar))',
+      },
+      '@media (prefers-reduced-transparency: reduce)': {
+        backgroundColor: 'rgb(var(--bar))',
+        '-webkit-backdrop-filter': 'none',
+        backdropFilter: 'none',
+      },
+    },
+    '.scrollbar-none': {
+      scrollbarWidth: 'none',
+      '&::-webkit-scrollbar': { display: 'none' },
+    },
+    ...Object.fromEntries(
+      Array.from({ length: 8 }, (_, i) => [
+        `.bg-avatar-${i + 1}`,
+        { backgroundImage: `linear-gradient(135deg, rgb(var(--avatar-${i + 1}-from)), rgb(var(--avatar-${i + 1}-to)))` },
+      ]),
+    ),
+  });
+});
+
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
   darkMode: 'class',
+  future: { hoverOnlyWhenSupported: true },
   theme: {
+    colors: {
+      transparent: 'transparent',
+      current: 'currentColor',
+      inherit: 'inherit',
+      canvas: token('canvas'),
+      surface: { DEFAULT: token('surface'), 2: token('surface-2'), 3: token('surface-3') },
+      ink: { DEFAULT: token('ink'), 2: token('ink-2'), 3: token('ink-3') },
+      line: { DEFAULT: token('line'), soft: token('line-soft'), strong: token('line-strong') },
+      accent: { DEFAULT: token('accent'), hover: token('accent-hover'), fg: token('accent-fg'), ink: token('accent-ink') },
+      success: token('success'),
+      warning: token('warning'),
+      danger: { DEFAULT: token('danger'), solid: token('danger-solid') },
+      gold: token('gold'),
+      silver: token('silver'),
+      bronze: token('bronze'),
+      thumb: token('thumb'),
+      bar: token('bar'),
+      'on-media': token('on-media'),
+      // These carry their own alpha (black/40 light, black/60 dark), so they take no opacity modifier.
+      scrim: 'rgb(var(--scrim))',
+      'media-scrim': 'rgb(var(--media-scrim))',
+    },
+    fontFamily: {
+      sans: ['-apple-system', 'BlinkMacSystemFont', '"Inter Variable"', 'system-ui', 'sans-serif'],
+      mono: ['ui-monospace', 'SFMono-Regular', '"JetBrains Mono"', 'monospace'],
+    },
+    // Named type scale only (no text-sm/text-lg). Letter-spacing follows Inter's dynamic metrics.
+    fontSize: {
+      display: ['2.5rem', { lineHeight: '2.875rem', letterSpacing: '-0.024em', fontWeight: '700' }],
+      'large-title': ['1.75rem', { lineHeight: '2.125rem', letterSpacing: '-0.022em', fontWeight: '600' }],
+      title: ['1.375rem', { lineHeight: '1.75rem', letterSpacing: '-0.018em', fontWeight: '600' }],
+      headline: ['1.0625rem', { lineHeight: '1.375rem', letterSpacing: '-0.013em', fontWeight: '600' }],
+      body: ['1.0625rem', { lineHeight: '1.5rem', letterSpacing: '-0.013em' }],
+      callout: ['0.9375rem', { lineHeight: '1.25rem', letterSpacing: '-0.009em' }],
+      footnote: ['0.8125rem', { lineHeight: '1.125rem', letterSpacing: '-0.003em' }],
+      caption: ['0.75rem', { lineHeight: '1rem', letterSpacing: '0' }],
+      tab: ['0.6875rem', { lineHeight: '0.8125rem', letterSpacing: '0.005em', fontWeight: '500' }],
+    },
+    boxShadow: {
+      none: 'none',
+      // Soft elevation in light mode; a hairline in dark mode (see --shadow-card in index.css).
+      card: 'var(--shadow-card)',
+      raised: 'var(--shadow-raised)',
+      thumb: 'var(--shadow-thumb)',
+    },
     extend: {
-      colors: {
-        border: '#e0e0e0',
-        input: '#e0e0e0',
-        ring: '#0071e3',
-        background: '#ffffff',
-        foreground: '#1d1d1f',
-        primary: {
-          DEFAULT: '#0066cc',
-          foreground: '#ffffff',
-        },
-        secondary: {
-          DEFAULT: '#f5f5f7',
-          foreground: '#1d1d1f',
-        },
-        destructive: {
-          DEFAULT: '#ff3b30',
-          foreground: '#ffffff',
-        },
-        muted: {
-          DEFAULT: '#f5f5f7',
-          foreground: '#86868b',
-        },
-        accent: {
-          DEFAULT: '#f5f5f7',
-          foreground: '#1d1d1f',
-        },
-        popover: {
-          DEFAULT: '#ffffff',
-          foreground: '#1d1d1f',
-        },
-        card: {
-          DEFAULT: '#ffffff',
-          foreground: '#1d1d1f',
-        },
-        apple: {
-          primary: '#0066cc',
-          blue: '#0066cc',
-          'blue-focus': '#0071e3',
-          'blue-dark': '#2997ff',
-          ink: '#1d1d1f',
-          body: '#1d1d1f',
-          'body-on-dark': '#ffffff',
-          'body-muted': '#cccccc',
-          'ink-muted-80': '#333333',
-          'ink-muted-48': '#7a7a7a',
-          'divider-soft': '#f0f0f0',
-          hairline: '#e0e0e0',
-          'hairline-dark': 'rgba(255, 255, 255, 0.12)',
-          canvas: '#ffffff',
-          parchment: '#f5f5f7',
-          pearl: '#fafafc',
-          'tile-1': '#272729',
-          'tile-2': '#2a2a2c',
-          'tile-3': '#252527',
-          black: '#000000',
-          'chip-translucent': 'rgba(210, 210, 215, 0.64)',
-        }
-      },
-      fontFamily: {
-        display: ['"SF Pro Display"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Inter"', 'sans-serif'],
-        text: ['"SF Pro Text"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Inter"', 'sans-serif'],
-        mono: ['"SF Mono"', '"JetBrains Mono"', 'ui-monospace', 'monospace'],
-      },
-      fontSize: {
-        'hero': ['56px', { lineHeight: '1.07', letterSpacing: '-0.02em', fontWeight: '600' }],
-        'display-lg': ['40px', { lineHeight: '1.10', letterSpacing: '-0.015em', fontWeight: '600' }],
-        'display-md': ['34px', { lineHeight: '1.47', letterSpacing: '-0.015em', fontWeight: '600' }],
-        'lead': ['28px', { lineHeight: '1.14', letterSpacing: '0.005em', fontWeight: '400' }],
-        'lead-airy': ['24px', { lineHeight: '1.5', letterSpacing: '0', fontWeight: '300' }],
-        'tagline': ['21px', { lineHeight: '1.19', letterSpacing: '0.01em', fontWeight: '600' }],
-        'body-strong': ['17px', { lineHeight: '1.24', letterSpacing: '-0.015em', fontWeight: '600' }],
-        'body': ['17px', { lineHeight: '1.47', letterSpacing: '-0.015em', fontWeight: '400' }],
-        'dense-link': ['17px', { lineHeight: '2.41', letterSpacing: '0', fontWeight: '400' }],
-        'caption': ['14px', { lineHeight: '1.43', letterSpacing: '-0.01em', fontWeight: '400' }],
-        'caption-strong': ['14px', { lineHeight: '1.29', letterSpacing: '-0.01em', fontWeight: '600' }],
-        'button-large': ['18px', { lineHeight: '1.0', letterSpacing: '0', fontWeight: '300' }],
-        'button-utility': ['14px', { lineHeight: '1.29', letterSpacing: '-0.01em', fontWeight: '400' }],
-        'fine-print': ['12px', { lineHeight: '1.0', letterSpacing: '-0.01em', fontWeight: '400' }],
-        'micro-legal': ['10px', { lineHeight: '1.3', letterSpacing: '-0.005em', fontWeight: '400' }],
-        'nav-link': ['12px', { lineHeight: '1.0', letterSpacing: '-0.01em', fontWeight: '400' }],
-      },
       borderRadius: {
-        'xs': '5px',
-        'sm': '8px',
-        'md': '11px',
-        'lg': '18px',
-        'pill': '9999px',
+        input: '0.75rem',
+        card: '1rem',
+        hero: '1.375rem',
       },
-      boxShadow: {
-        'product': '0 5px 30px rgba(0, 0, 0, 0.22)',
-        'product-lg': '0 12px 40px rgba(0, 0, 0, 0.26)',
-        'subtle': '0 2px 12px rgba(0, 0, 0, 0.04)',
-        'pearl-ring': '0 0 0 3px #f0f0f0',
+      spacing: {
+        12.5: '3.125rem',
+      },
+      maxHeight: {
+        sheet: `calc(100dvh - ${env('top')} - 1rem)`,
+      },
+      inset: {
+        kb: 'var(--kb-inset, 0px)',
+      },
+      zIndex: {
+        bar: '30',
+        dialog: '50',
+        toast: '60',
+      },
+      transitionDuration: {
+        250: '250ms',
+      },
+      transitionTimingFunction: {
+        ios: 'cubic-bezier(0.32, 0.72, 0, 1)',
       },
     },
   },
-  plugins: [],
+  plugins: [animate, safeArea, materials],
 };

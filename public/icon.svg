@@ -1,5 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="115" fill="#000000"/>
-  <circle cx="256" cy="256" r="180" fill="#1d1d1f" stroke="#333333" stroke-width="4"/>
-  <path d="M276 108 L172 268 L244 268 L220 404 L340 236 L268 236 Z" fill="#0066cc" stroke="#ffffff" stroke-width="8" stroke-linejoin="round"/>
+  <title>Loopin</title>
+  <defs>
+    <linearGradient id="loopin-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2483F5"/>
+      <stop offset="1" stop-color="#0059CC"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="114" fill="url(#loopin-bg)"/>
+  <!-- The loop: an open ring. The mark stays inside a 160-unit radius, well within the 40% maskable safe zone. -->
+  <path d="M363.12 280.38A118 118 0 1 1 231.62 148.88" fill="none" stroke="#fff" stroke-width="60" stroke-linecap="round"/>
+  <!-- The spark in the ring's opening. -->
+  <path d="M339.34 118.66Q339.34 172.66 393.34 172.66Q339.34 172.66 339.34 226.66Q339.34 172.66 285.34 172.66Q339.34 172.66 339.34 118.66Z" fill="#fff"/>
 </svg>
